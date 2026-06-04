@@ -18,6 +18,7 @@
                     <option value="5">Hard (5x5)</option>
                 </select>
             </div>
+            <button id="achievementsBtn" class="btn btn-secondary">🏆 Achievements</button>
             <button id="newGame" class="btn btn-primary">New Game</button>
         </div>
         
@@ -30,6 +31,19 @@
                 <span class="stat-label">Time:</span>
                 <span id="time" class="stat-value">00:00</span>
             </div>
+            <div class="stat">
+                <span class="stat-label">💰 Coins:</span>
+                <span id="coins" class="stat-value">0</span>
+            </div>
+            <div class="stat">
+                <span class="stat-label">💎 Gems:</span>
+                <span id="gems" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <div class="game-controls">
+            <button id="undoBtn" class="btn btn-undo">↩️ Undo (10 💰)</button>
+            <button id="missionsBtn" class="btn btn-mission">🎯 Missions</button>
         </div>
 
         <div id="puzzle" class="puzzle"></div>
@@ -38,9 +52,332 @@
             <h2>🎉 Congratulations!</h2>
             <p>You solved the puzzle!</p>
             <p id="winStats"></p>
+            <p id="rewardMessage" class="reward-message"></p>
             <button id="playAgain" class="btn btn-primary">Play Again</button>
         </div>
+
+        <div id="achievementsModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🏆 Achievements</h2>
+                    <button id="closeAchievements" class="close-btn">&times;</button>
+                </div>
+                <div class="achievements-list">
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🎮</div>
+                        <div class="achievement-info">
+                            <h3>Games Played</h3>
+                            <p id="gamesPlayed">0</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🏆</div>
+                        <div class="achievement-info">
+                            <h3>Games Won</h3>
+                            <p id="gamesWon">0</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">⚡</div>
+                        <div class="achievement-info">
+                            <h3>Best Time (Easy)</h3>
+                            <p id="bestTimeEasy">--:--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">⚡</div>
+                        <div class="achievement-info">
+                            <h3>Best Time (Medium)</h3>
+                            <p id="bestTimeMedium">--:--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">⚡</div>
+                        <div class="achievement-info">
+                            <h3>Best Time (Hard)</h3>
+                            <p id="bestTimeHard">--:--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🎯</div>
+                        <div class="achievement-info">
+                            <h3>Best Moves (Easy)</h3>
+                            <p id="bestMovesEasy">--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🎯</div>
+                        <div class="achievement-info">
+                            <h3>Best Moves (Medium)</h3>
+                            <p id="bestMovesMedium">--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🎯</div>
+                        <div class="achievement-info">
+                            <h3>Best Moves (Hard)</h3>
+                            <p id="bestMovesHard">--</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">🔥</div>
+                        <div class="achievement-info">
+                            <h3>Win Streak</h3>
+                            <p id="winStreak">0</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">💰</div>
+                        <div class="achievement-info">
+                            <h3>Total Coins</h3>
+                            <p id="totalCoins">0</p>
+                        </div>
+                    </div>
+                    <div class="achievement-item">
+                        <div class="achievement-icon">💎</div>
+                        <div class="achievement-info">
+                            <h3>Total Gems</h3>
+                            <p id="totalGems">0</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="resetAchievements" class="btn btn-danger">Reset Stats</button>
+            </div>
+        </div>
+
+        <div id="missionsModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🎯 Missions</h2>
+                    <button id="closeMissions" class="close-btn">&times;</button>
+                </div>
+                <div class="missions-list">
+                    <div class="mission-item" id="mission1">
+                        <div class="mission-icon">⏱️</div>
+                        <div class="mission-info">
+                            <h3>Speed Demon</h3>
+                            <p>Complete Easy puzzle in under 2 minutes</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+50 💰 +5 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission2">
+                        <div class="mission-icon">⏱️</div>
+                        <div class="mission-info">
+                            <h3>Time Master</h3>
+                            <p>Complete Medium puzzle in under 3 minutes</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission3">
+                        <div class="mission-icon">⏱️</div>
+                        <div class="mission-info">
+                            <h3>Ultimate Speed</h3>
+                            <p>Complete Hard puzzle in under 5 minutes</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+200 💰 +20 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission4">
+                        <div class="mission-icon">🎯</div>
+                        <div class="mission-info">
+                            <h3>Precision Master</h3>
+                            <p>Complete Easy puzzle in under 50 moves</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+75 💰 +8 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission5">
+                        <div class="mission-icon">🎯</div>
+                        <div class="mission-info">
+                            <h3>Move Expert</h3>
+                            <p>Complete Medium puzzle in under 100 moves</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+150 💰 +15 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission6">
+                        <div class="mission-icon">🔥</div>
+                        <div class="mission-info">
+                            <h3>Hot Streak</h3>
+                            <p>Win 3 games in a row</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission7">
+                        <div class="mission-icon">🔥</div>
+                        <div class="mission-info">
+                            <h3>On Fire</h3>
+                            <p>Win 5 games in a row</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+200 💰 +20 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission8">
+                        <div class="mission-icon">🎮</div>
+                        <div class="mission-info">
+                            <h3>Regular Player</h3>
+                            <p>Play 10 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+50 💰 +5 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission9">
+                        <div class="mission-icon">🎮</div>
+                        <div class="mission-info">
+                            <h3>Dedicated Player</h3>
+                            <p>Play 25 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission10">
+                        <div class="mission-icon">🎮</div>
+                        <div class="mission-info">
+                            <h3>Master Player</h3>
+                            <p>Play 50 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+200 💰 +20 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission11">
+                        <div class="mission-icon">💰</div>
+                        <div class="mission-info">
+                            <h3>Coin Collector</h3>
+                            <p>Earn 500 total coins</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission12">
+                        <div class="mission-icon">💰</div>
+                        <div class="mission-info">
+                            <h3>Rich Player</h3>
+                            <p>Earn 1000 total coins</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+200 💰 +20 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission13">
+                        <div class="mission-icon">💎</div>
+                        <div class="mission-info">
+                            <h3>Gem Hunter</h3>
+                            <p>Earn 50 total gems</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission14">
+                        <div class="mission-icon">💎</div>
+                        <div class="mission-info">
+                            <h3>Gem Master</h3>
+                            <p>Earn 100 total gems</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+200 💰 +20 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission15">
+                        <div class="mission-icon">🏆</div>
+                        <div class="mission-info">
+                            <h3>Winner</h3>
+                            <p>Win 5 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+75 💰 +8 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission16">
+                        <div class="mission-icon">🏆</div>
+                        <div class="mission-info">
+                            <h3>Champion</h3>
+                            <p>Win 15 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+150 💰 +15 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission17">
+                        <div class="mission-icon">🏆</div>
+                        <div class="mission-info">
+                            <h3>Legend</h3>
+                            <p>Win 30 games</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+300 💰 +30 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission18">
+                        <div class="mission-icon">⭐</div>
+                        <div class="mission-info">
+                            <h3>All-Rounder</h3>
+                            <p>Complete at least one game of each difficulty</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+150 💰 +15 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission19">
+                        <div class="mission-icon">⚡</div>
+                        <div class="mission-info">
+                            <h3>Speed King</h3>
+                            <p>Complete Easy puzzle in under 1 minute</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+100 💰 +10 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mission-item" id="mission20">
+                        <div class="mission-icon">🎯</div>
+                        <div class="mission-info">
+                            <h3>Perfect Precision</h3>
+                            <p>Complete Easy puzzle in under 30 moves</p>
+                            <div class="mission-progress">
+                                <span class="mission-status">Not Started</span>
+                                <span class="mission-reward">+150 💰 +15 💎</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
+
+    <div class="made-in-india">Made in India by blmukund</div>
 
     <script src="script.js"></script>
 </body>
