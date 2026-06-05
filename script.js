@@ -227,6 +227,7 @@ class SlidingPuzzle {
         this.coinsElement = document.getElementById('coins');
         this.gemsElement = document.getElementById('gems');
         this.difficultySelect = document.getElementById('difficulty');
+        this.gameModeSelect = document.getElementById('gameMode');
         this.newGameButton = document.getElementById('newGame');
         this.playAgainButton = document.getElementById('playAgain');
         this.winMessage = document.getElementById('winMessage');
@@ -237,6 +238,9 @@ class SlidingPuzzle {
         this.closeAchievements = document.getElementById('closeAchievements');
         this.resetAchievements = document.getElementById('resetAchievements');
         this.undoBtn = document.getElementById('undoBtn');
+        this.hintBtn = document.getElementById('hintBtn');
+        this.shuffleBtn = document.getElementById('shuffleBtn');
+        this.dailyChallengeBtn = document.getElementById('dailyChallengeBtn');
         this.missionsBtn = document.getElementById('missionsBtn');
         this.missionsModal = document.getElementById('missionsModal');
         this.closeMissions = document.getElementById('closeMissions');
@@ -273,6 +277,7 @@ class SlidingPuzzle {
             this.size = parseInt(e.target.value);
             this.startNewGame();
         });
+        this.gameModeSelect.addEventListener('change', () => this.startNewGame());
         this.achievementsBtn.addEventListener('click', () => this.showAchievements());
         this.closeAchievements.addEventListener('click', () => this.hideAchievements());
         this.achievementsModal.addEventListener('click', (e) => {
@@ -282,6 +287,9 @@ class SlidingPuzzle {
         });
         this.resetAchievements.addEventListener('click', () => this.resetStats());
         this.undoBtn.addEventListener('click', () => this.undoMove());
+        this.hintBtn.addEventListener('click', () => this.useHint());
+        this.shuffleBtn.addEventListener('click', () => this.useShuffle());
+        this.dailyChallengeBtn.addEventListener('click', () => this.startDailyChallenge());
         this.missionsBtn.addEventListener('click', () => this.showMissions());
         this.closeMissions.addEventListener('click', () => this.hideMissions());
         this.missionsModal.addEventListener('click', (e) => {
@@ -301,6 +309,7 @@ class SlidingPuzzle {
         this.checkProgressMissions();
         this.updateThemeStoreButton();
         this.updateLevelDisplay();
+        this.updatePowerUpButtons();
         this.startNewGame();
     }
     
@@ -310,6 +319,13 @@ class SlidingPuzzle {
         this.seconds = 0;
         this.isGameActive = true;
         this.moveHistory = [];
+        this.gameMode = this.gameModeSelect.value;
+        
+        if (this.gameMode === 'timeAttack') {
+            this.timeLimit = this.size * 60;
+            this.timeAttackTimer = this.timeLimit;
+        }
+        
         this.updateStats();
         this.updateUndoButton();
         
@@ -455,14 +471,24 @@ class SlidingPuzzle {
         this.achievements.coins += rewards.coins;
         this.achievements.gems += rewards.gems;
         
-        // Add exp reward
-        const expReward = this.calculateExpReward();
-        this.addExp(expReward);
+        // Daily challenge bonus
+        if (this.gameMode === 'dailyChallenge') {
+            const today = new Date().toDateString();
+            this.achievements.lastDailyChallenge = today;
+            this.achievements.coins += 500;
+            this.achievements.gems += 50;
+            const expReward = this.calculateExpReward();
+            this.addExp(expReward);
+            this.rewardMessage.textContent = `🎁 Daily Challenge Complete! You earned ${rewards.coins + 500} coins, ${rewards.gems + 50} gems, and ${expReward} EXP!`;
+        } else {
+            // Add exp reward
+            const expReward = this.calculateExpReward();
+            this.addExp(expReward);
+            this.rewardMessage.textContent = `🎁 You earned ${rewards.coins} coins, ${rewards.gems} gems, and ${expReward} EXP!`;
+        }
         
         this.saveAchievements();
         this.updateCurrencyDisplay();
-        
-        this.rewardMessage.textContent = `🎁 You earned ${rewards.coins} coins, ${rewards.gems} gems, and ${expReward} EXP!`;
         
         this.winMessage.classList.remove('hidden');
         
@@ -471,7 +497,7 @@ class SlidingPuzzle {
     }
     
     calculateExpReward() {
-        const difficultyMultiplier = this.size === 3 ? 1 : this.size === 4 ? 2 : 3;
+        const difficultyMultiplier = this.size;
         const baseExp = 50 * difficultyMultiplier;
         const timeBonus = Math.max(0, Math.floor((300 - this.seconds) / 10));
         const movesBonus = Math.max(0, Math.floor((200 - this.moves) / 5));
@@ -512,9 +538,18 @@ class SlidingPuzzle {
     
     updateStats() {
         this.movesElement.textContent = this.moves;
-        const minutes = Math.floor(this.seconds / 60);
-        const seconds = this.seconds % 60;
-        this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (this.gameMode === 'timeAttack') {
+            const minutes = Math.floor(this.timeAttackTimer / 60);
+            const seconds = this.timeAttackTimer % 60;
+            this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            this.timeElement.style.color = this.timeAttackTimer <= 30 ? '#ff0000' : '#333';
+        } else {
+            const minutes = Math.floor(this.seconds / 60);
+            const seconds = this.seconds % 60;
+            this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            this.timeElement.style.color = '#333';
+        }
     }
     
     updateCurrencyDisplay() {
@@ -528,6 +563,77 @@ class SlidingPuzzle {
     
     updateThemeStoreButton() {
         this.themeStoreBtn.disabled = this.achievements.gems < 999;
+    }
+    
+    updatePowerUpButtons() {
+        this.hintBtn.disabled = this.achievements.coins < 50;
+        this.shuffleBtn.disabled = this.achievements.gems < 100;
+    }
+    
+    useHint() {
+        if (this.achievements.coins < 50) {
+            alert('Not enough coins! You need 50 coins to use a hint.');
+            return;
+        }
+        
+        if (!this.isGameActive) {
+            alert('Start a game first!');
+            return;
+        }
+        
+        this.achievements.coins -= 50;
+        this.saveAchievements();
+        this.updateCurrencyDisplay();
+        this.updatePowerUpButtons();
+        
+        // Find and highlight a valid move
+        const neighbors = this.getNeighbors(this.emptyIndex);
+        const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
+        
+        const tiles = this.puzzleElement.children;
+        tiles[randomNeighbor].style.boxShadow = '0 0 20px #f39c12';
+        setTimeout(() => {
+            tiles[randomNeighbor].style.boxShadow = '';
+        }, 2000);
+    }
+    
+    useShuffle() {
+        if (this.achievements.gems < 100) {
+            alert('Not enough gems! You need 100 gems to use shuffle.');
+            return;
+        }
+        
+        if (!this.isGameActive) {
+            alert('Start a game first!');
+            return;
+        }
+        
+        if (confirm('Shuffle the puzzle for 100 gems?')) {
+            this.achievements.gems -= 100;
+            this.saveAchievements();
+            this.updateCurrencyDisplay();
+            this.updatePowerUpButtons();
+            
+            this.shufflePuzzle();
+            this.render();
+        }
+    }
+    
+    startDailyChallenge() {
+        const today = new Date().toDateString();
+        const lastPlayed = this.achievements.lastDailyChallenge || '';
+        
+        if (lastPlayed === today) {
+            alert('You already completed today\'s Daily Challenge! Come back tomorrow.');
+            return;
+        }
+        
+        if (confirm('Start today\'s Daily Challenge? Special rewards await!')) {
+            this.gameMode = 'dailyChallenge';
+            this.size = 5; // Daily challenge is always 5x5
+            this.difficultySelect.value = '5';
+            this.startNewGame();
+        }
     }
     
     calculateMaxExp(level) {
@@ -710,6 +816,7 @@ class SlidingPuzzle {
                     if (!decrypted.gems) decrypted.gems = 0;
                     if (!decrypted.level) decrypted.level = 1;
                     if (!decrypted.currentExp) decrypted.currentExp = 0;
+                    if (!decrypted.lastDailyChallenge) decrypted.lastDailyChallenge = '';
                     // TEMPORARY: Set to max values for testing
                     decrypted.coins = 9999999999999;
                     decrypted.gems = 9999999999999;
@@ -728,7 +835,8 @@ class SlidingPuzzle {
             coins: 9999999999999,
             gems: 9999999999999,
             level: 1,
-            currentExp: 0
+            currentExp: 0,
+            lastDailyChallenge: ''
         };
     }
     
@@ -759,7 +867,14 @@ class SlidingPuzzle {
         this.achievements.gamesWon++;
         this.achievements.winStreak++;
         
-        const difficultyKey = this.size === 3 ? 'easy' : this.size === 4 ? 'medium' : 'hard';
+        // Streak bonuses
+        if (this.achievements.winStreak >= 5) {
+            const streakBonus = this.achievements.winStreak * 10;
+            this.achievements.coins += streakBonus;
+            this.achievements.gems += Math.floor(streakBonus / 10);
+        }
+        
+        const difficultyKey = this.size === 3 ? 'easy' : this.size === 4 ? 'medium' : this.size === 5 ? 'hard' : 'expert';
         
         if (!this.achievements.bestTime[difficultyKey] || this.seconds < this.achievements.bestTime[difficultyKey]) {
             this.achievements.bestTime[difficultyKey] = this.seconds;
@@ -847,8 +962,21 @@ class SlidingPuzzle {
     
     startTimer() {
         this.timerInterval = setInterval(() => {
-            this.seconds++;
-            this.updateStats();
+            if (this.gameMode === 'timeAttack') {
+                this.timeAttackTimer--;
+                this.seconds++;
+                this.updateStats();
+                
+                if (this.timeAttackTimer <= 0) {
+                    this.stopTimer();
+                    this.isGameActive = false;
+                    alert('Time Attack Mode: Time\'s up! Game Over.');
+                    this.startNewGame();
+                }
+            } else {
+                this.seconds++;
+                this.updateStats();
+            }
         }, 1000);
     }
     
@@ -860,7 +988,7 @@ class SlidingPuzzle {
     }
     
     calculateRewards() {
-        const difficultyMultiplier = this.size === 3 ? 1 : this.size === 4 ? 2 : 3;
+        const difficultyMultiplier = this.size;
         const timeBonus = Math.max(0, Math.floor((300 - this.seconds) / 10));
         const movesBonus = Math.max(0, Math.floor((200 - this.moves) / 5));
         

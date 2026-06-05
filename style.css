@@ -149,6 +149,57 @@ h1 {
     box-shadow: none;
 }
 
+.btn-hint {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+}
+
+.btn-hint:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(230, 126, 34, 0.4);
+}
+
+.btn-hint:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-shuffle {
+    background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+    color: white;
+}
+
+.btn-shuffle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(142, 68, 173, 0.4);
+}
+
+.btn-shuffle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-daily {
+    background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+    color: white;
+}
+
+.btn-daily:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(26, 188, 156, 0.4);
+}
+
+.btn-daily:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 .game-controls {
     display: flex;
     justify-content: center;

@@ -13,9 +13,22 @@
             <div class="difficulty-selector">
                 <label for="difficulty">Difficulty:</label>
                 <select id="difficulty">
+                    <option value="2">Very Easy (2x2)</option>
                     <option value="3">Easy (3x3)</option>
                     <option value="4" selected>Medium (4x4)</option>
                     <option value="5">Hard (5x5)</option>
+                    <option value="6">Expert (6x6)</option>
+                    <option value="7">Master (7x7)</option>
+                    <option value="8">Grandmaster (8x8)</option>
+                    <option value="9">Legendary (9x9)</option>
+                    <option value="10">Ultimate (10x10)</option>
+                </select>
+            </div>
+            <div class="mode-selector">
+                <label for="gameMode">Mode:</label>
+                <select id="gameMode">
+                    <option value="normal" selected>Normal</option>
+                    <option value="timeAttack">Time Attack</option>
                 </select>
             </div>
             <button id="achievementsBtn" class="btn btn-secondary">🏆 Achievements</button>
@@ -60,6 +73,9 @@
 
         <div class="game-controls">
             <button id="undoBtn" class="btn btn-undo">↩️ Undo (10 💰)</button>
+            <button id="hintBtn" class="btn btn-hint">💡 Hint (50 💰)</button>
+            <button id="shuffleBtn" class="btn btn-shuffle">🔀 Shuffle (100 💎)</button>
+            <button id="dailyChallengeBtn" class="btn btn-daily">📅 Daily Challenge</button>
             <button id="missionsBtn" class="btn btn-mission">🎯 Missions</button>
             <button id="themeStoreBtn" class="btn btn-theme">🎨 Theme Store (999 💎)</button>
         </div>
