@@ -132,6 +132,23 @@ h1 {
     box-shadow: 0 5px 20px rgba(247, 183, 51, 0.4);
 }
 
+.btn-theme {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.btn-theme:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(245, 87, 108, 0.4);
+}
+
+.btn-theme:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
 .game-controls {
     display: flex;
     justify-content: center;
@@ -442,6 +459,75 @@ h1 {
     font-size: 0.9rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+}
+
+.theme-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 20px;
+}
+
+.theme-item {
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.theme-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.theme-item.purchased {
+    border-color: #4caf50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.theme-item.active {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.theme-preview {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 10px;
+    border-radius: 8px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+}
+
+.theme-preview-tile {
+    border-radius: 2px;
+}
+
+.theme-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.theme-price {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.theme-status {
+    font-size: 0.8rem;
+    margin-top: 5px;
+    font-weight: 600;
+}
+
+.theme-status.purchased {
+    color: #4caf50;
+}
+
+.theme-status.active {
+    color: #2196f3;
 }
 
 @media (max-width: 480px) {

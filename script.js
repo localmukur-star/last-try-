@@ -131,6 +131,76 @@ class SlidingPuzzle {
         this.undoCooldown = 1000; // 1 second cooldown
         this.actionTimestamps = [];
         
+        // Available themes
+        this.availableThemes = {
+            default: {
+                name: 'Default',
+                price: 0,
+                preview: ['#3498db', '#2980b9', '#1abc9c'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    tile.style.background = '';
+                }
+            },
+            neon: {
+                name: 'Neon',
+                price: 1000,
+                preview: ['#ff00ff', '#00ffff', '#ff0080'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#ff00ff', '#00ffff', '#ff0080', '#80ff00', '#ff8000'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                    tile.style.textShadow = '0 0 10px rgba(255,255,255,0.8)';
+                }
+            },
+            ocean: {
+                name: 'Ocean',
+                price: 1000,
+                preview: ['#0077be', '#00bfff', '#1e90ff'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#0077be', '#00bfff', '#1e90ff', '#4682b4', '#5f9ea0'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                }
+            },
+            sunset: {
+                name: 'Sunset',
+                price: 1000,
+                preview: ['#ff6b6b', '#feca57', '#ff9ff3'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#ff6b6b', '#feca57', '#ff9ff3', '#ff9f43', '#ee5a24'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                }
+            },
+            forest: {
+                name: 'Forest',
+                price: 1000,
+                preview: ['#27ae60', '#2ecc71', '#1abc9c'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#27ae60', '#2ecc71', '#1abc9c', '#16a085', '#009432'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                }
+            },
+            galaxy: {
+                name: 'Galaxy',
+                price: 1000,
+                preview: ['#6c5ce7', '#a29bfe', '#fd79a8'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#6c5ce7', '#a29bfe', '#fd79a8', '#e84393', '#d63031'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                    tile.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+                }
+            }
+        };
+        
         this.puzzleElement = document.getElementById('puzzle');
         this.movesElement = document.getElementById('moves');
         this.timeElement = document.getElementById('time');
@@ -150,9 +220,15 @@ class SlidingPuzzle {
         this.missionsBtn = document.getElementById('missionsBtn');
         this.missionsModal = document.getElementById('missionsModal');
         this.closeMissions = document.getElementById('closeMissions');
+        this.themeStoreBtn = document.getElementById('themeStoreBtn');
+        this.themeStoreModal = document.getElementById('themeStoreModal');
+        this.closeThemeStore = document.getElementById('closeThemeStore');
+        this.themeList = document.getElementById('themeList');
         
         this.achievements = this.loadAchievements();
         this.missions = this.loadMissions();
+        this.themes = this.loadThemes();
+        this.currentTheme = this.themes.currentTheme || 'default';
         
         // Initialize anti-debugging
         AntiDebug.init();
@@ -186,9 +262,17 @@ class SlidingPuzzle {
                 this.hideMissions();
             }
         });
+        this.themeStoreBtn.addEventListener('click', () => this.showThemeStore());
+        this.closeThemeStore.addEventListener('click', () => this.hideThemeStore());
+        this.themeStoreModal.addEventListener('click', (e) => {
+            if (e.target === this.themeStoreModal) {
+                this.hideThemeStore();
+            }
+        });
         
         this.updateCurrencyDisplay();
         this.checkProgressMissions();
+        this.updateThemeStoreButton();
         this.startNewGame();
     }
     
@@ -367,12 +451,21 @@ class SlidingPuzzle {
             tileElement.style.fontSize = `${tileSize * 0.4}px`;
             
             if (tile !== 0) {
-                tileElement.textContent = tile;
+                this.applyThemeToTile(tileElement, tile);
                 tileElement.addEventListener('click', () => this.handleTileClick(index));
             }
             
             this.puzzleElement.appendChild(tileElement);
         });
+    }
+    
+    applyThemeToTile(tileElement, tileNumber) {
+        const theme = this.availableThemes[this.currentTheme];
+        if (theme && theme.applyToTile) {
+            theme.applyToTile(tileElement, tileNumber);
+        } else {
+            tileElement.textContent = tileNumber;
+        }
     }
     
     updateStats() {
@@ -389,6 +482,131 @@ class SlidingPuzzle {
     
     updateUndoButton() {
         this.undoBtn.disabled = this.moveHistory.length === 0 || this.achievements.coins < 10;
+    }
+    
+    updateThemeStoreButton() {
+        this.themeStoreBtn.disabled = this.achievements.gems < 1000;
+    }
+    
+    loadThemes() {
+        const saved = localStorage.getItem('puzzleThemes');
+        if (saved) {
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted;
+                }
+            } catch (e) {
+                console.error('Failed to load themes:', e);
+            }
+        }
+        return {
+            purchased: ['default'],
+            currentTheme: 'default'
+        };
+    }
+    
+    saveThemes() {
+        const checksum = Security.generateChecksum(this.themes);
+        const dataWithChecksum = { ...this.themes, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('puzzleThemes', encrypted);
+        }
+    }
+    
+    showThemeStore() {
+        this.renderThemeList();
+        this.themeStoreModal.classList.remove('hidden');
+    }
+    
+    hideThemeStore() {
+        this.themeStoreModal.classList.add('hidden');
+    }
+    
+    renderThemeList() {
+        this.themeList.innerHTML = '';
+        
+        Object.keys(this.availableThemes).forEach(themeId => {
+            const theme = this.availableThemes[themeId];
+            const isPurchased = this.themes.purchased.includes(themeId);
+            const isActive = this.themes.currentTheme === themeId;
+            
+            const themeItem = document.createElement('div');
+            themeItem.className = `theme-item ${isPurchased ? 'purchased' : ''} ${isActive ? 'active' : ''}`;
+            
+            const preview = document.createElement('div');
+            preview.className = 'theme-preview';
+            
+            theme.preview.forEach((color, index) => {
+                const previewTile = document.createElement('div');
+                previewTile.className = 'theme-preview-tile';
+                previewTile.style.background = color;
+                preview.appendChild(previewTile);
+            });
+            
+            const name = document.createElement('div');
+            name.className = 'theme-name';
+            name.textContent = theme.name;
+            
+            const price = document.createElement('div');
+            price.className = 'theme-price';
+            price.textContent = isPurchased ? 'Owned' : `${theme.price} 💎`;
+            
+            const status = document.createElement('div');
+            status.className = `theme-status ${isPurchased ? 'purchased' : ''} ${isActive ? 'active' : ''}`;
+            status.textContent = isActive ? 'Active' : isPurchased ? 'Owned' : 'Purchase';
+            
+            themeItem.appendChild(preview);
+            themeItem.appendChild(name);
+            themeItem.appendChild(price);
+            themeItem.appendChild(status);
+            
+            themeItem.addEventListener('click', () => this.handleThemeClick(themeId));
+            
+            this.themeList.appendChild(themeItem);
+        });
+    }
+    
+    handleThemeClick(themeId) {
+        const isPurchased = this.themes.purchased.includes(themeId);
+        
+        if (isPurchased) {
+            // Apply the theme
+            this.themes.currentTheme = themeId;
+            this.currentTheme = themeId;
+            this.saveThemes();
+            this.render();
+            this.renderThemeList();
+        } else {
+            // Purchase the theme
+            this.purchaseTheme(themeId);
+        }
+    }
+    
+    purchaseTheme(themeId) {
+        const theme = this.availableThemes[themeId];
+        
+        if (this.achievements.gems < theme.price) {
+            alert(`Not enough gems! You need ${theme.price} gems to purchase this theme.`);
+            return;
+        }
+        
+        if (confirm(`Purchase ${theme.name} theme for ${theme.price} gems?`)) {
+            this.achievements.gems -= theme.price;
+            this.themes.purchased.push(themeId);
+            this.themes.currentTheme = themeId;
+            this.currentTheme = themeId;
+            
+            this.saveAchievements();
+            this.saveThemes();
+            this.updateCurrencyDisplay();
+            this.updateThemeStoreButton();
+            this.render();
+            this.renderThemeList();
+            
+            alert(`${theme.name} theme purchased and applied!`);
+        }
     }
     
     loadAchievements() {
