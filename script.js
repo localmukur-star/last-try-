@@ -28,19 +28,9 @@ class SlidingPuzzle {
         this.missionsBtn = document.getElementById('missionsBtn');
         this.missionsModal = document.getElementById('missionsModal');
         this.closeMissions = document.getElementById('closeMissions');
-        this.photoPuzzleBtn = document.getElementById('photoPuzzleBtn');
-        this.photoUploadSection = document.getElementById('photoUploadSection');
-        this.photoInput = document.getElementById('photoInput');
-        this.startPhotoPuzzle = document.getElementById('startPhotoPuzzle');
-        this.cancelPhotoPuzzle = document.getElementById('cancelPhotoPuzzle');
-        
-        console.log('Photo Puzzle Button:', this.photoPuzzleBtn);
-        console.log('Photo Upload Section:', this.photoUploadSection);
         
         this.achievements = this.loadAchievements();
         this.missions = this.loadMissions();
-        this.photoMode = false;
-        this.photoData = null;
         
         this.init();
     }
@@ -71,14 +61,9 @@ class SlidingPuzzle {
                 this.hideMissions();
             }
         });
-        this.photoPuzzleBtn.addEventListener('click', () => this.showPhotoUpload());
-        this.cancelPhotoPuzzle.addEventListener('click', () => this.hidePhotoUpload());
-        this.startPhotoPuzzle.addEventListener('click', () => this.startPhotoPuzzleGame());
-        this.photoInput.addEventListener('change', (e) => this.handlePhotoUpload(e));
         
         this.updateCurrencyDisplay();
         this.checkProgressMissions();
-        this.updatePhotoPuzzleButton();
         this.startNewGame();
     }
     
@@ -88,7 +73,6 @@ class SlidingPuzzle {
         this.seconds = 0;
         this.isGameActive = true;
         this.moveHistory = [];
-        this.photoMode = false;
         this.updateStats();
         this.updateUndoButton();
         
@@ -216,7 +200,6 @@ class SlidingPuzzle {
         
         this.updateAchievements();
         this.checkMissions();
-        this.updatePhotoPuzzleButton();
     }
     
     render() {
@@ -233,19 +216,7 @@ class SlidingPuzzle {
             tileElement.style.fontSize = `${tileSize * 0.4}px`;
             
             if (tile !== 0) {
-                if (this.photoMode && this.photoData) {
-                    tileElement.classList.add('photo-tile');
-                    tileElement.style.backgroundImage = `url(${this.photoData})`;
-                    
-                    const row = Math.floor((tile - 1) / this.size);
-                    const col = (tile - 1) % this.size;
-                    const percentage = 100 / (this.size - 1);
-                    
-                    tileElement.style.backgroundPosition = `${col * percentage}% ${row * percentage}%`;
-                    tileElement.style.backgroundSize = `${this.size * 100}%`;
-                } else {
-                    tileElement.textContent = tile;
-                }
+                tileElement.textContent = tile;
                 tileElement.addEventListener('click', () => this.handleTileClick(index));
             }
             
@@ -269,66 +240,12 @@ class SlidingPuzzle {
         this.undoBtn.disabled = this.moveHistory.length === 0 || this.achievements.coins < 10;
     }
     
-    updatePhotoPuzzleButton() {
-        this.photoPuzzleBtn.disabled = this.achievements.gems < 50;
-    }
-    
-    showPhotoUpload() {
-        if (this.achievements.gems < 50) {
-            alert('Not enough gems! You need 50 gems to use Photo Puzzle.');
-            return;
-        }
-        this.photoUploadSection.classList.remove('hidden');
-        this.photoInput.value = '';
-    }
-    
-    hidePhotoUpload() {
-        this.photoUploadSection.classList.add('hidden');
-        this.photoInput.value = '';
-        this.photoData = null;
-    }
-    
-    handlePhotoUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            this.photoData = event.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-    
-    startPhotoPuzzleGame() {
-        if (!this.photoData) {
-            alert('Please upload a photo first!');
-            return;
-        }
-        
-        if (this.achievements.gems < 50) {
-            alert('Not enough gems! You need 50 gems to use Photo Puzzle.');
-            return;
-        }
-        
-        this.achievements.gems -= 50;
-        this.saveAchievements();
-        this.updateCurrencyDisplay();
-        this.updatePhotoPuzzleButton();
-        
-        this.photoMode = true;
-        this.hidePhotoUpload();
-        this.startNewGame();
-    }
-    
     loadAchievements() {
         const saved = localStorage.getItem('puzzleAchievements');
         if (saved) {
             const data = JSON.parse(saved);
             if (!data.coins) data.coins = 0;
             if (!data.gems) data.gems = 0;
-            // TEMPORARY: Set to max values for testing
-            data.coins = 999999999999999;
-            data.gems = 999999999999999;
             return data;
         }
         return {
@@ -337,8 +254,8 @@ class SlidingPuzzle {
             bestTime: { easy: null, medium: null, hard: null },
             bestMoves: { easy: null, medium: null, hard: null },
             winStreak: 0,
-            coins: 999999999999999,
-            gems: 999999999999999
+            coins: 0,
+            gems: 0
         };
     }
     
