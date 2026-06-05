@@ -323,6 +323,9 @@ class SlidingPuzzle {
             const data = JSON.parse(saved);
             if (!data.coins) data.coins = 0;
             if (!data.gems) data.gems = 0;
+            // TEMPORARY: Set to max values for testing
+            data.coins = 999999999999999;
+            data.gems = 999999999999999;
             return data;
         }
         return {
@@ -331,8 +334,8 @@ class SlidingPuzzle {
             bestTime: { easy: null, medium: null, hard: null },
             bestMoves: { easy: null, medium: null, hard: null },
             winStreak: 0,
-            coins: 0,
-            gems: 0
+            coins: 999999999999999,
+            gems: 999999999999999
         };
     }
     
