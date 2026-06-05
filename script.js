@@ -34,6 +34,9 @@ class SlidingPuzzle {
         this.startPhotoPuzzle = document.getElementById('startPhotoPuzzle');
         this.cancelPhotoPuzzle = document.getElementById('cancelPhotoPuzzle');
         
+        console.log('Photo Puzzle Button:', this.photoPuzzleBtn);
+        console.log('Photo Upload Section:', this.photoUploadSection);
+        
         this.achievements = this.loadAchievements();
         this.missions = this.loadMissions();
         this.photoMode = false;
