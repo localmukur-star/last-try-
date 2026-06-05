@@ -224,11 +224,18 @@ class SlidingPuzzle {
         this.themeStoreModal = document.getElementById('themeStoreModal');
         this.closeThemeStore = document.getElementById('closeThemeStore');
         this.themeList = document.getElementById('themeList');
+        this.levelElement = document.getElementById('level');
+        this.currentExpElement = document.getElementById('currentExp');
+        this.maxExpElement = document.getElementById('maxExp');
+        this.expFillElement = document.getElementById('expFill');
         
         this.achievements = this.loadAchievements();
         this.missions = this.loadMissions();
         this.themes = this.loadThemes();
         this.currentTheme = this.themes.currentTheme || 'default';
+        this.level = this.achievements.level || 1;
+        this.currentExp = this.achievements.currentExp || 0;
+        this.maxExp = this.calculateMaxExp(this.level);
         
         // Initialize anti-debugging
         AntiDebug.init();
@@ -273,6 +280,7 @@ class SlidingPuzzle {
         this.updateCurrencyDisplay();
         this.checkProgressMissions();
         this.updateThemeStoreButton();
+        this.updateLevelDisplay();
         this.startNewGame();
     }
     
@@ -426,15 +434,29 @@ class SlidingPuzzle {
         const rewards = this.calculateRewards();
         this.achievements.coins += rewards.coins;
         this.achievements.gems += rewards.gems;
+        
+        // Add exp reward
+        const expReward = this.calculateExpReward();
+        this.addExp(expReward);
+        
         this.saveAchievements();
         this.updateCurrencyDisplay();
         
-        this.rewardMessage.textContent = `🎁 You earned ${rewards.coins} coins and ${rewards.gems} gems!`;
+        this.rewardMessage.textContent = `🎁 You earned ${rewards.coins} coins, ${rewards.gems} gems, and ${expReward} EXP!`;
         
         this.winMessage.classList.remove('hidden');
         
         this.updateAchievements();
         this.checkMissions();
+    }
+    
+    calculateExpReward() {
+        const difficultyMultiplier = this.size === 3 ? 1 : this.size === 4 ? 2 : 3;
+        const baseExp = 50 * difficultyMultiplier;
+        const timeBonus = Math.max(0, Math.floor((300 - this.seconds) / 10));
+        const movesBonus = Math.max(0, Math.floor((200 - this.moves) / 5));
+        
+        return baseExp + timeBonus + movesBonus;
     }
     
     render() {
@@ -486,6 +508,38 @@ class SlidingPuzzle {
     
     updateThemeStoreButton() {
         this.themeStoreBtn.disabled = this.achievements.gems < 1000;
+    }
+    
+    calculateMaxExp(level) {
+        return Math.floor(100 * Math.pow(1.5, level - 1));
+    }
+    
+    addExp(exp) {
+        this.currentExp += exp;
+        
+        while (this.currentExp >= this.maxExp) {
+            this.currentExp -= this.maxExp;
+            this.level++;
+            this.maxExp = this.calculateMaxExp(this.level);
+            this.showLevelUpNotification();
+        }
+        
+        this.achievements.level = this.level;
+        this.achievements.currentExp = this.currentExp;
+        this.saveAchievements();
+        this.updateLevelDisplay();
+    }
+    
+    updateLevelDisplay() {
+        this.levelElement.textContent = this.level;
+        this.currentExpElement.textContent = this.currentExp;
+        this.maxExpElement.textContent = this.maxExp;
+        const expPercentage = (this.currentExp / this.maxExp) * 100;
+        this.expFillElement.style.width = `${expPercentage}%`;
+    }
+    
+    showLevelUpNotification() {
+        alert(`🎉 Level Up! You are now level ${this.level}!`);
     }
     
     loadThemes() {
@@ -617,6 +671,8 @@ class SlidingPuzzle {
                 if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
                     if (!decrypted.coins) decrypted.coins = 0;
                     if (!decrypted.gems) decrypted.gems = 0;
+                    if (!decrypted.level) decrypted.level = 1;
+                    if (!decrypted.currentExp) decrypted.currentExp = 0;
                     // TEMPORARY: Set to max values for testing
                     decrypted.coins = 9999999999999;
                     decrypted.gems = 9999999999999;
@@ -633,7 +689,9 @@ class SlidingPuzzle {
             bestMoves: { easy: null, medium: null, hard: null },
             winStreak: 0,
             coins: 9999999999999,
-            gems: 9999999999999
+            gems: 9999999999999,
+            level: 1,
+            currentExp: 0
         };
     }
     
