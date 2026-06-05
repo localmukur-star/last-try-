@@ -617,6 +617,9 @@ class SlidingPuzzle {
                 if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
                     if (!decrypted.coins) decrypted.coins = 0;
                     if (!decrypted.gems) decrypted.gems = 0;
+                    // TEMPORARY: Set to max values for testing
+                    decrypted.coins = 9999999999999;
+                    decrypted.gems = 9999999999999;
                     return decrypted;
                 }
             } catch (e) {
@@ -629,8 +632,8 @@ class SlidingPuzzle {
             bestTime: { easy: null, medium: null, hard: null },
             bestMoves: { easy: null, medium: null, hard: null },
             winStreak: 0,
-            coins: 0,
-            gems: 0
+            coins: 9999999999999,
+            gems: 9999999999999
         };
     }
     
