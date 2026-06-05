@@ -136,6 +136,7 @@ class SlidingPuzzle {
             default: {
                 name: 'Default',
                 price: 0,
+                levelRequired: 1,
                 preview: ['#3498db', '#2980b9', '#1abc9c'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -144,7 +145,8 @@ class SlidingPuzzle {
             },
             neon: {
                 name: 'Neon',
-                price: 1000,
+                price: 999,
+                levelRequired: 6,
                 preview: ['#ff00ff', '#00ffff', '#ff0080'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -156,7 +158,8 @@ class SlidingPuzzle {
             },
             ocean: {
                 name: 'Ocean',
-                price: 1000,
+                price: 999,
+                levelRequired: 11,
                 preview: ['#0077be', '#00bfff', '#1e90ff'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -167,7 +170,8 @@ class SlidingPuzzle {
             },
             sunset: {
                 name: 'Sunset',
-                price: 1000,
+                price: 999,
+                levelRequired: 16,
                 preview: ['#ff6b6b', '#feca57', '#ff9ff3'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -178,7 +182,8 @@ class SlidingPuzzle {
             },
             forest: {
                 name: 'Forest',
-                price: 1000,
+                price: 999,
+                levelRequired: 21,
                 preview: ['#27ae60', '#2ecc71', '#1abc9c'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -189,7 +194,8 @@ class SlidingPuzzle {
             },
             galaxy: {
                 name: 'Galaxy',
-                price: 1000,
+                price: 999,
+                levelRequired: 26,
                 preview: ['#6c5ce7', '#a29bfe', '#fd79a8'],
                 applyToTile: (tile, number) => {
                     tile.textContent = number;
@@ -197,6 +203,20 @@ class SlidingPuzzle {
                     tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
                     tile.style.color = '#fff';
                     tile.style.textShadow = '0 0 10px rgba(255,255,255,0.5)';
+                }
+            },
+            rgb: {
+                name: 'RGB',
+                price: 9999,
+                levelRequired: 31,
+                preview: ['#ff0000', '#00ff00', '#0000ff'],
+                applyToTile: (tile, number) => {
+                    tile.textContent = number;
+                    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+                    tile.style.background = `linear-gradient(135deg, ${colors[number % colors.length]}, ${colors[(number + 1) % colors.length]})`;
+                    tile.style.color = '#fff';
+                    tile.style.textShadow = '0 0 15px rgba(255,255,255,1)';
+                    tile.style.animation = 'rgbGlow 2s ease-in-out infinite';
                 }
             }
         };
@@ -507,7 +527,7 @@ class SlidingPuzzle {
     }
     
     updateThemeStoreButton() {
-        this.themeStoreBtn.disabled = this.achievements.gems < 1000;
+        this.themeStoreBtn.disabled = this.achievements.gems < 999;
     }
     
     calculateMaxExp(level) {
@@ -585,9 +605,10 @@ class SlidingPuzzle {
             const theme = this.availableThemes[themeId];
             const isPurchased = this.themes.purchased.includes(themeId);
             const isActive = this.themes.currentTheme === themeId;
+            const meetsLevelRequirement = this.level >= theme.levelRequired;
             
             const themeItem = document.createElement('div');
-            themeItem.className = `theme-item ${isPurchased ? 'purchased' : ''} ${isActive ? 'active' : ''}`;
+            themeItem.className = `theme-item ${isPurchased ? 'purchased' : ''} ${isActive ? 'active' : ''} ${!meetsLevelRequirement ? 'locked' : ''}`;
             
             const preview = document.createElement('div');
             preview.className = 'theme-preview';
@@ -607,13 +628,23 @@ class SlidingPuzzle {
             price.className = 'theme-price';
             price.textContent = isPurchased ? 'Owned' : `${theme.price} 💎`;
             
+            const levelReq = document.createElement('div');
+            levelReq.className = 'theme-level-req';
+            levelReq.textContent = `Requires Level ${theme.levelRequired}`;
+            
             const status = document.createElement('div');
             status.className = `theme-status ${isPurchased ? 'purchased' : ''} ${isActive ? 'active' : ''}`;
-            status.textContent = isActive ? 'Active' : isPurchased ? 'Owned' : 'Purchase';
+            if (!meetsLevelRequirement) {
+                status.textContent = 'Locked';
+                status.classList.add('locked');
+            } else {
+                status.textContent = isActive ? 'Active' : isPurchased ? 'Owned' : 'Purchase';
+            }
             
             themeItem.appendChild(preview);
             themeItem.appendChild(name);
             themeItem.appendChild(price);
+            themeItem.appendChild(levelReq);
             themeItem.appendChild(status);
             
             themeItem.addEventListener('click', () => this.handleThemeClick(themeId));
@@ -624,6 +655,12 @@ class SlidingPuzzle {
     
     handleThemeClick(themeId) {
         const isPurchased = this.themes.purchased.includes(themeId);
+        const theme = this.availableThemes[themeId];
+        
+        if (!isPurchased && this.level < theme.levelRequired) {
+            alert(`You need to reach level ${theme.levelRequired} to unlock this theme!`);
+            return;
+        }
         
         if (isPurchased) {
             // Apply the theme

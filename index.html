@@ -22,36 +22,38 @@
             <button id="newGame" class="btn btn-primary">New Game</button>
         </div>
         
-        <div class="stats">
-            <div class="stat">
-                <span class="stat-label">Moves:</span>
-                <span id="moves" class="stat-value">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">Time:</span>
-                <span id="time" class="stat-value">00:00</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">💰 Coins:</span>
-                <span id="coins" class="stat-value">0</span>
-            </div>
-            <div class="stat">
-                <span class="stat-label">💎 Gems:</span>
-                <span id="gems" class="stat-value">0</span>
-            </div>
-        </div>
-
-        <div class="level-container">
-            <div class="level-info">
-                <span class="level-label">Level:</span>
-                <span id="level" class="level-value">1</span>
-            </div>
-            <div class="exp-bar-container">
-                <div class="exp-bar" id="expBar">
-                    <div class="exp-fill" id="expFill"></div>
+        <div class="stats-container">
+            <div class="stats">
+                <div class="stat">
+                    <span class="stat-label">Moves:</span>
+                    <span id="moves" class="stat-value">0</span>
                 </div>
-                <div class="exp-text">
-                    <span id="currentExp">0</span> / <span id="maxExp">100</span> EXP
+                <div class="stat">
+                    <span class="stat-label">Time:</span>
+                    <span id="time" class="stat-value">00:00</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">💰 Coins:</span>
+                    <span id="coins" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">💎 Gems:</span>
+                    <span id="gems" class="stat-value">0</span>
+                </div>
+            </div>
+
+            <div class="level-container">
+                <div class="level-info">
+                    <span class="level-label">Level:</span>
+                    <span id="level" class="level-value">1</span>
+                </div>
+                <div class="exp-bar-container">
+                    <div class="exp-bar" id="expBar">
+                        <div class="exp-fill" id="expFill"></div>
+                    </div>
+                    <div class="exp-text">
+                        <span id="currentExp">0</span> / <span id="maxExp">100</span> EXP
+                    </div>
                 </div>
             </div>
         </div>
@@ -59,7 +61,7 @@
         <div class="game-controls">
             <button id="undoBtn" class="btn btn-undo">↩️ Undo (10 💰)</button>
             <button id="missionsBtn" class="btn btn-mission">🎯 Missions</button>
-            <button id="themeStoreBtn" class="btn btn-theme">🎨 Theme Store (1000 💎)</button>
+            <button id="themeStoreBtn" class="btn btn-theme">🎨 Theme Store (999 💎)</button>
         </div>
 
         <div id="puzzle" class="puzzle"></div>
