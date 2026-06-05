@@ -1,3 +1,120 @@
+// Security measures for anti-hacking
+const _0x4f2a = {
+    _0x1a2b: 'puzzle_game_secret_key_2024',
+    
+    _0x2c3d(data) {
+        try {
+            const str = JSON.stringify(data);
+            let encrypted = '';
+            for (let i = 0; i < str.length; i++) {
+                encrypted += String.fromCharCode(str.charCodeAt(i) ^ this._0x1a2b.charCodeAt(i % this._0x1a2b.length));
+            }
+            return btoa(encrypted);
+        } catch (e) {
+            return null;
+        }
+    },
+    
+    _0x3e4f(encrypted) {
+        try {
+            const decoded = atob(encrypted);
+            let decrypted = '';
+            for (let i = 0; i < decoded.length; i++) {
+                decrypted += String.fromCharCode(decoded.charCodeAt(i) ^ this._0x1a2b.charCodeAt(i % this._0x1a2b.length));
+            }
+            return JSON.parse(decrypted);
+        } catch (e) {
+            return null;
+        }
+    },
+    
+    _0x5a6b(data) {
+        const str = JSON.stringify(data);
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return hash.toString(36);
+    },
+    
+    _0x7c8d(data, checksum) {
+        return this._0x5a6b(data) === checksum;
+    }
+};
+
+// Backward compatibility
+const Security = {
+    secretKey: _0x4f2a._0x1a2b,
+    encrypt: (data) => _0x4f2a._0x2c3d(data),
+    decrypt: (encrypted) => _0x4f2a._0x3e4f(encrypted),
+    generateChecksum: (data) => _0x4f2a._0x5a6b(data),
+    validateChecksum: (data, checksum) => _0x4f2a._0x7c8d(data, checksum)
+};
+
+// Anti-debugging measures
+const AntiDebug = {
+    init() {
+        this.detectDevTools();
+        this.preventConsoleAccess();
+        this.detectTimingAttacks();
+    },
+    
+    detectDevTools() {
+        const threshold = 160;
+        setInterval(() => {
+            const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+            const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+            
+            if (widthThreshold || heightThreshold) {
+                // DevTools might be open
+                this.clearSensitiveData();
+            }
+        }, 1000);
+    },
+    
+    preventConsoleAccess() {
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        console.log = function() {
+            originalLog.apply(console, arguments);
+            AntiDebug.clearSensitiveData();
+        };
+        
+        console.warn = function() {
+            originalWarn.apply(console, arguments);
+            AntiDebug.clearSensitiveData();
+        };
+        
+        console.error = function() {
+            originalError.apply(console, arguments);
+            AntiDebug.clearSensitiveData();
+        };
+    },
+    
+    detectTimingAttacks() {
+        let lastActionTime = Date.now();
+        
+        window.addEventListener('keydown', () => {
+            const now = Date.now();
+            if (now - lastActionTime < 50) {
+                // Possible automated/scripted input
+                this.clearSensitiveData();
+            }
+            lastActionTime = now;
+        });
+    },
+    
+    clearSensitiveData() {
+        // In a real implementation, you might want to reset the game
+        // For now, we'll just log a warning
+        console.warn('Potential tampering detected');
+    }
+};
+
 class SlidingPuzzle {
     constructor() {
         this.size = 4;
@@ -8,6 +125,11 @@ class SlidingPuzzle {
         this.timerInterval = null;
         this.isGameActive = false;
         this.moveHistory = [];
+        
+        // Rate limiting
+        this.lastUndoTime = 0;
+        this.undoCooldown = 1000; // 1 second cooldown
+        this.actionTimestamps = [];
         
         this.puzzleElement = document.getElementById('puzzle');
         this.movesElement = document.getElementById('moves');
@@ -31,6 +153,9 @@ class SlidingPuzzle {
         
         this.achievements = this.loadAchievements();
         this.missions = this.loadMissions();
+        
+        // Initialize anti-debugging
+        AntiDebug.init();
         
         this.init();
     }
@@ -151,6 +276,25 @@ class SlidingPuzzle {
     handleTileClick(index) {
         if (!this.isGameActive) return;
         
+        // Rate limiting for tile clicks
+        const now = Date.now();
+        this.actionTimestamps.push(now);
+        
+        // Keep only last 100 actions
+        if (this.actionTimestamps.length > 100) {
+            this.actionTimestamps.shift();
+        }
+        
+        // Check for suspicious rapid clicking
+        if (this.actionTimestamps.length >= 10) {
+            const recentActions = this.actionTimestamps.slice(-10);
+            const timeSpan = recentActions[9] - recentActions[0];
+            if (timeSpan < 500) { // 10 clicks in less than 500ms
+                alert('Please slow down!');
+                return;
+            }
+        }
+        
         const neighbors = this.getNeighbors(this.emptyIndex);
         
         if (neighbors.includes(index)) {
@@ -176,6 +320,13 @@ class SlidingPuzzle {
     }
     
     handleWin() {
+        // Anti-tampering check
+        if (this.seconds < 5 || this.moves < 5) {
+            alert('Suspicious win detected. Game reset.');
+            this.startNewGame();
+            return;
+        }
+        
         this.isGameActive = false;
         this.stopTimer();
         
@@ -243,10 +394,16 @@ class SlidingPuzzle {
     loadAchievements() {
         const saved = localStorage.getItem('puzzleAchievements');
         if (saved) {
-            const data = JSON.parse(saved);
-            if (!data.coins) data.coins = 0;
-            if (!data.gems) data.gems = 0;
-            return data;
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    if (!decrypted.coins) decrypted.coins = 0;
+                    if (!decrypted.gems) decrypted.gems = 0;
+                    return decrypted;
+                }
+            } catch (e) {
+                console.error('Failed to load achievements:', e);
+            }
         }
         return {
             gamesPlayed: 0,
@@ -260,10 +417,29 @@ class SlidingPuzzle {
     }
     
     saveAchievements() {
-        localStorage.setItem('puzzleAchievements', JSON.stringify(this.achievements));
+        const checksum = Security.generateChecksum(this.achievements);
+        const dataWithChecksum = { ...this.achievements, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('puzzleAchievements', encrypted);
+        }
     }
     
     updateAchievements() {
+        // Anti-tampering: Validate achievement values
+        if (this.achievements.coins < 0 || this.achievements.gems < 0) {
+            this.achievements.coins = 0;
+            this.achievements.gems = 0;
+        }
+        
+        if (this.achievements.gamesWon < 0) {
+            this.achievements.gamesWon = 0;
+        }
+        
+        if (this.achievements.winStreak < 0) {
+            this.achievements.winStreak = 0;
+        }
+        
         this.achievements.gamesWon++;
         this.achievements.winStreak++;
         
@@ -323,7 +499,31 @@ class SlidingPuzzle {
                 coins: 0,
                 gems: 0
             };
+            this.missions = {
+                mission1: false,
+                mission2: false,
+                mission3: false,
+                mission4: false,
+                mission5: false,
+                mission6: false,
+                mission7: false,
+                mission8: false,
+                mission9: false,
+                mission10: false,
+                mission11: false,
+                mission12: false,
+                mission13: false,
+                mission14: false,
+                mission15: false,
+                mission16: false,
+                mission17: false,
+                mission18: false,
+                mission19: false,
+                mission20: false,
+                difficultiesCompleted: []
+            };
             this.saveAchievements();
+            this.saveMissions();
             this.updateAchievementsDisplay();
             this.updateCurrencyDisplay();
         }
@@ -351,13 +551,27 @@ class SlidingPuzzle {
         const baseCoins = 20 * difficultyMultiplier;
         const baseGems = 2 * difficultyMultiplier;
         
+        // Anti-tampering: Cap rewards to prevent exploitation
+        const maxCoins = 1000;
+        const maxGems = 100;
+        
+        const totalCoins = Math.min(baseCoins + timeBonus + movesBonus, maxCoins);
+        const totalGems = Math.min(baseGems + Math.floor(timeBonus / 20) + Math.floor(movesBonus / 10), maxGems);
+        
         return {
-            coins: baseCoins + timeBonus + movesBonus,
-            gems: baseGems + Math.floor(timeBonus / 20) + Math.floor(movesBonus / 10)
+            coins: totalCoins,
+            gems: totalGems
         };
     }
     
     undoMove() {
+        // Rate limiting check
+        const now = Date.now();
+        if (now - this.lastUndoTime < this.undoCooldown) {
+            alert('Please wait before undoing again.');
+            return;
+        }
+        
         if (this.moveHistory.length === 0) return;
         if (this.achievements.coins < 10) {
             alert('Not enough coins! You need 10 coins to undo.');
@@ -373,6 +587,7 @@ class SlidingPuzzle {
         this.emptyIndex = lastMove.emptyIndex;
         
         this.moves--;
+        this.lastUndoTime = now;
         this.updateStats();
         this.render();
         this.updateUndoButton();
@@ -381,7 +596,14 @@ class SlidingPuzzle {
     loadMissions() {
         const saved = localStorage.getItem('puzzleMissions');
         if (saved) {
-            return JSON.parse(saved);
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted;
+                }
+            } catch (e) {
+                console.error('Failed to load missions:', e);
+            }
         }
         return {
             mission1: false,
@@ -409,7 +631,12 @@ class SlidingPuzzle {
     }
     
     saveMissions() {
-        localStorage.setItem('puzzleMissions', JSON.stringify(this.missions));
+        const checksum = Security.generateChecksum(this.missions);
+        const dataWithChecksum = { ...this.missions, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('puzzleMissions', encrypted);
+        }
     }
     
     checkMissions() {
