@@ -230,6 +230,7 @@ class SlidingPuzzle {
         this.gameModeSelect = document.getElementById('gameMode');
         this.newGameButton = document.getElementById('newGame');
         this.playAgainButton = document.getElementById('playAgain');
+        this.shareBtn = document.getElementById('shareBtn');
         this.winMessage = document.getElementById('winMessage');
         this.winStats = document.getElementById('winStats');
         this.rewardMessage = document.getElementById('rewardMessage');
@@ -237,9 +238,42 @@ class SlidingPuzzle {
         this.achievementsModal = document.getElementById('achievementsModal');
         this.closeAchievements = document.getElementById('closeAchievements');
         this.resetAchievements = document.getElementById('resetAchievements');
+        this.statsBtn = document.getElementById('statsBtn');
+        this.statsModal = document.getElementById('statsModal');
+        this.closeStats = document.getElementById('closeStats');
+        this.statsDashboard = document.getElementById('statsDashboard');
+        this.tutorialBtn = document.getElementById('tutorialBtn');
+        this.tutorialModal = document.getElementById('tutorialModal');
+        this.closeTutorial = document.getElementById('closeTutorial');
+        this.tutorialContent = document.getElementById('tutorialContent');
+        this.prevStepBtn = document.getElementById('prevStep');
+        this.nextStepBtn = document.getElementById('nextStep');
+        this.stepIndicator = document.getElementById('stepIndicator');
+        this.tutorialStep = 0;
+        this.connectionModal = document.getElementById('connectionModal');
+        this.closeConnection = document.getElementById('closeConnection');
+        this.createRoomBtn = document.getElementById('createRoomBtn');
+        this.joinRoomBtn = document.getElementById('joinRoomBtn');
+        this.createRoomSection = document.getElementById('createRoomSection');
+        this.joinRoomSection = document.getElementById('joinRoomSection');
+        this.roomCodeInput = document.getElementById('roomCode');
+        this.joinRoomCodeInput = document.getElementById('joinRoomCode');
+        this.copyRoomCodeBtn = document.getElementById('copyRoomCode');
+        this.joinRoomSubmitBtn = document.getElementById('joinRoomSubmit');
+        this.waitingIndicator = document.getElementById('waitingIndicator');
+        this.opponentStats = document.getElementById('opponentStats');
+        this.opponentMoves = document.getElementById('opponentMoves');
+        this.opponentTime = document.getElementById('opponentTime');
+        this.opponentStatus = document.getElementById('opponentStatus');
         this.undoBtn = document.getElementById('undoBtn');
         this.hintBtn = document.getElementById('hintBtn');
         this.shuffleBtn = document.getElementById('shuffleBtn');
+        this.skipBtn = document.getElementById('skipBtn');
+        this.savePuzzleBtn = document.getElementById('savePuzzleBtn');
+        this.galleryBtn = document.getElementById('galleryBtn');
+        this.galleryModal = document.getElementById('galleryModal');
+        this.closeGallery = document.getElementById('closeGallery');
+        this.puzzleGallery = document.getElementById('puzzleGallery');
         this.dailyChallengeBtn = document.getElementById('dailyChallengeBtn');
         this.missionsBtn = document.getElementById('missionsBtn');
         this.missionsModal = document.getElementById('missionsModal');
@@ -260,6 +294,20 @@ class SlidingPuzzle {
         this.level = this.achievements.level || 1;
         this.currentExp = this.achievements.currentExp || 0;
         this.maxExp = this.calculateMaxExp(this.level);
+        this.hintUsed = false;
+        this.dailyChallenge = this.loadDailyChallenge();
+        this.savedPuzzles = this.loadSavedPuzzles();
+        this.specialEvent = this.loadSpecialEvent();
+        
+        // Online multiplayer state
+        this.multiplayerRoom = null;
+        this.isHost = false;
+        this.opponentConnected = false;
+        this.multiplayerInterval = null;
+        
+        // Sound effects
+        this.audioContext = null;
+        this.initAudio();
         
         // Initialize anti-debugging
         AntiDebug.init();
@@ -273,11 +321,19 @@ class SlidingPuzzle {
             this.winMessage.classList.add('hidden');
             this.startNewGame();
         });
+        this.shareBtn.addEventListener('click', () => this.shareResult());
         this.difficultySelect.addEventListener('change', (e) => {
             this.size = parseInt(e.target.value);
             this.startNewGame();
         });
-        this.gameModeSelect.addEventListener('change', () => this.startNewGame());
+        this.gameModeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'onlineMultiplayer') {
+                this.showConnectionModal();
+            } else {
+                this.size = parseInt(this.difficultySelect.value);
+                this.startNewGame();
+            }
+        });
         this.achievementsBtn.addEventListener('click', () => this.showAchievements());
         this.closeAchievements.addEventListener('click', () => this.hideAchievements());
         this.achievementsModal.addEventListener('click', (e) => {
@@ -286,9 +342,44 @@ class SlidingPuzzle {
             }
         });
         this.resetAchievements.addEventListener('click', () => this.resetStats());
+        this.statsBtn.addEventListener('click', () => this.showStats());
+        this.closeStats.addEventListener('click', () => this.hideStats());
+        this.statsModal.addEventListener('click', (e) => {
+            if (e.target === this.statsModal) {
+                this.hideStats();
+            }
+        });
+        this.tutorialBtn.addEventListener('click', () => this.showTutorial());
+        this.closeTutorial.addEventListener('click', () => this.hideTutorial());
+        this.tutorialModal.addEventListener('click', (e) => {
+            if (e.target === this.tutorialModal) {
+                this.hideTutorial();
+            }
+        });
+        this.prevStepBtn.addEventListener('click', () => this.prevTutorialStep());
+        this.nextStepBtn.addEventListener('click', () => this.nextTutorialStep());
+        this.closeConnection.addEventListener('click', () => this.hideConnectionModal());
+        this.connectionModal.addEventListener('click', (e) => {
+            if (e.target === this.connectionModal) {
+                this.hideConnectionModal();
+            }
+        });
+        this.createRoomBtn.addEventListener('click', () => this.createRoom());
+        this.joinRoomBtn.addEventListener('click', () => this.showJoinRoom());
+        this.copyRoomCodeBtn.addEventListener('click', () => this.copyRoomCode());
+        this.joinRoomSubmitBtn.addEventListener('click', () => this.joinRoom());
         this.undoBtn.addEventListener('click', () => this.undoMove());
         this.hintBtn.addEventListener('click', () => this.useHint());
         this.shuffleBtn.addEventListener('click', () => this.useShuffle());
+        this.skipBtn.addEventListener('click', () => this.useSkipTile());
+        this.savePuzzleBtn.addEventListener('click', () => this.savePuzzle());
+        this.galleryBtn.addEventListener('click', () => this.showGallery());
+        this.closeGallery.addEventListener('click', () => this.hideGallery());
+        this.galleryModal.addEventListener('click', (e) => {
+            if (e.target === this.galleryModal) {
+                this.hideGallery();
+            }
+        });
         this.dailyChallengeBtn.addEventListener('click', () => this.startDailyChallenge());
         this.missionsBtn.addEventListener('click', () => this.showMissions());
         this.closeMissions.addEventListener('click', () => this.hideMissions());
@@ -309,7 +400,8 @@ class SlidingPuzzle {
         this.checkProgressMissions();
         this.updateThemeStoreButton();
         this.updateLevelDisplay();
-        this.updatePowerUpButtons();
+        this.updateDailyChallengeButton();
+        this.checkSpecialEvent();
         this.startNewGame();
     }
     
@@ -319,15 +411,25 @@ class SlidingPuzzle {
         this.seconds = 0;
         this.isGameActive = true;
         this.moveHistory = [];
+        this.hintUsed = false;
+        this.shuffleUsed = false;
+        this.skipUsed = false;
         this.gameMode = this.gameModeSelect.value;
+        this.timeLimit = this.getTimeLimit();
         
-        if (this.gameMode === 'timeAttack') {
-            this.timeLimit = this.size * 60;
-            this.timeAttackTimer = this.timeLimit;
+        // Initialize multiplayer state
+        if (this.gameMode === 'localMultiplayer') {
+            this.currentPlayer = 1;
+            this.player1Moves = 0;
+            this.player2Moves = 0;
+            this.player1Time = 0;
+            this.player2Time = 0;
         }
         
         this.updateStats();
         this.updateUndoButton();
+        this.updateHintButton();
+        this.updatePowerUpButtons();
         
         this.createSolvedPuzzle();
         this.shufflePuzzle();
@@ -337,6 +439,24 @@ class SlidingPuzzle {
         this.achievements.gamesPlayed++;
         this.saveAchievements();
         this.checkProgressMissions();
+    }
+    
+    getTimeLimit() {
+        if (this.gameMode !== 'timeAttack') return null;
+        
+        const limits = {
+            2: 30,
+            3: 60,
+            4: 120,
+            5: 180,
+            6: 300,
+            7: 420,
+            8: 600,
+            9: 900,
+            10: 1200
+        };
+        
+        return limits[this.size] || 120;
     }
     
     createSolvedPuzzle() {
@@ -361,6 +481,42 @@ class SlidingPuzzle {
             const neighbors = this.getNeighbors(this.emptyIndex);
             const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
             this.swapTiles(randomNeighbor, this.emptyIndex, false);
+        }
+    }
+    
+    handleTileClick(index) {
+        if (!this.isGameActive) return;
+        
+        // Rate limiting check
+        const now = Date.now();
+        this.actionTimestamps.push(now);
+        this.actionTimestamps = this.actionTimestamps.filter(t => now - t < 10000);
+        
+        if (this.actionTimestamps.length > 50) {
+            alert('Too many rapid actions detected. Please slow down.');
+            return;
+        }
+        
+        const neighbors = this.getNeighbors(this.emptyIndex);
+        if (neighbors.includes(index)) {
+            this.playSound('move');
+            this.swapTiles(index, this.emptyIndex, true);
+            this.moves++;
+            
+            // Multiplayer turn tracking
+            if (this.gameMode === 'localMultiplayer') {
+                if (this.currentPlayer === 1) {
+                    this.player1Moves++;
+                    this.player1Time = this.seconds;
+                } else {
+                    this.player2Moves++;
+                    this.player2Time = this.seconds;
+                }
+                this.currentPlayer = this.currentPlayer === 1 ? 2 : 1;
+            }
+            
+            this.updateStats();
+            this.checkWin();
         }
     }
     
@@ -457,47 +613,82 @@ class SlidingPuzzle {
         
         this.isGameActive = false;
         this.stopTimer();
+        this.playSound('win');
         
         const minutes = Math.floor(this.seconds / 60);
         const seconds = this.seconds % 60;
         const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        this.winStats.innerHTML = `
+        let winStatsHtml = `
             <strong>Moves:</strong> ${this.moves}<br>
             <strong>Time:</strong> ${timeStr}
         `;
+        
+        // Show multiplayer results
+        if (this.gameMode === 'localMultiplayer') {
+            const winner = this.player1Moves < this.player2Moves ? 'Player 1' : 
+                          this.player2Moves < this.player1Moves ? 'Player 2' : 'Tie';
+            winStatsHtml += `
+                <br><strong>Player 1:</strong> ${this.player1Moves} moves<br>
+                <strong>Player 2:</strong> ${this.player2Moves} moves<br>
+                <strong>Winner:</strong> ${winner}!
+            `;
+        }
+        
+        // Show online multiplayer results
+        if (this.gameMode === 'onlineMultiplayer' && this.multiplayerRoom) {
+            const roomData = localStorage.getItem(`mp_room_${this.multiplayerRoom}`);
+            if (roomData) {
+                const parsedRoom = JSON.parse(roomData);
+                const opponentMoves = this.isHost ? parsedRoom.guestMoves : parsedRoom.hostMoves;
+                const opponentTime = this.isHost ? parsedRoom.guestTime : parsedRoom.hostTime;
+                const winner = this.moves < opponentMoves ? 'You Win!' : 
+                              opponentMoves < this.moves ? 'Opponent Wins!' : 'Tie!';
+                winStatsHtml += `
+                    <br><strong>Opponent Moves:</strong> ${opponentMoves}<br>
+                    <strong>Opponent Time:</strong> ${Math.floor(opponentTime / 60)}:${(opponentTime % 60).toString().padStart(2, '0')}<br>
+                    <strong>Result:</strong> ${winner}
+                `;
+                
+                // Clean up room
+                localStorage.removeItem(`mp_room_${this.multiplayerRoom}`);
+                if (this.multiplayerInterval) {
+                    clearInterval(this.multiplayerInterval);
+                    this.multiplayerInterval = null;
+                }
+                this.opponentStats.classList.add('hidden');
+            }
+        }
+        
+        this.winStats.innerHTML = winStatsHtml;
         
         const rewards = this.calculateRewards();
         this.achievements.coins += rewards.coins;
         this.achievements.gems += rewards.gems;
         
-        // Daily challenge bonus
-        if (this.gameMode === 'dailyChallenge') {
-            const today = new Date().toDateString();
-            this.achievements.lastDailyChallenge = today;
-            this.achievements.coins += 500;
-            this.achievements.gems += 50;
-            const expReward = this.calculateExpReward();
-            this.addExp(expReward);
-            this.rewardMessage.textContent = `🎁 Daily Challenge Complete! You earned ${rewards.coins + 500} coins, ${rewards.gems + 50} gems, and ${expReward} EXP!`;
-        } else {
-            // Add exp reward
-            const expReward = this.calculateExpReward();
-            this.addExp(expReward);
-            this.rewardMessage.textContent = `🎁 You earned ${rewards.coins} coins, ${rewards.gems} gems, and ${expReward} EXP!`;
-        }
+        // Add exp reward
+        const expReward = this.calculateExpReward();
+        this.addExp(expReward);
         
         this.saveAchievements();
         this.updateCurrencyDisplay();
+        
+        let rewardText = `🎁 You earned ${rewards.coins} coins, ${rewards.gems} gems, and ${expReward} EXP!`;
+        if (rewards.streakBonus > 0) {
+            rewardText += ` (Streak Bonus: +${rewards.streakBonus} coins)`;
+        }
+        this.rewardMessage.textContent = rewardText;
         
         this.winMessage.classList.remove('hidden');
         
         this.updateAchievements();
         this.checkMissions();
+        this.completeDailyChallenge();
+        this.saveLocalLeaderboard();
     }
     
     calculateExpReward() {
-        const difficultyMultiplier = this.size;
+        const difficultyMultiplier = this.size === 3 ? 1 : this.size === 4 ? 2 : 3;
         const baseExp = 50 * difficultyMultiplier;
         const timeBonus = Math.max(0, Math.floor((300 - this.seconds) / 10));
         const movesBonus = Math.max(0, Math.floor((200 - this.moves) / 5));
@@ -538,17 +729,13 @@ class SlidingPuzzle {
     
     updateStats() {
         this.movesElement.textContent = this.moves;
+        const minutes = Math.floor(this.seconds / 60);
+        const seconds = this.seconds % 60;
+        this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
-        if (this.gameMode === 'timeAttack') {
-            const minutes = Math.floor(this.timeAttackTimer / 60);
-            const seconds = this.timeAttackTimer % 60;
-            this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            this.timeElement.style.color = this.timeAttackTimer <= 30 ? '#ff0000' : '#333';
-        } else {
-            const minutes = Math.floor(this.seconds / 60);
-            const seconds = this.seconds % 60;
-            this.timeElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-            this.timeElement.style.color = '#333';
+        // Show current player in multiplayer mode
+        if (this.gameMode === 'localMultiplayer') {
+            this.timeElement.textContent += ` (P${this.currentPlayer}'s Turn)`;
         }
     }
     
@@ -565,75 +752,265 @@ class SlidingPuzzle {
         this.themeStoreBtn.disabled = this.achievements.gems < 999;
     }
     
+    updateHintButton() {
+        this.hintBtn.disabled = this.hintUsed || this.achievements.coins < 50;
+    }
+    
     updatePowerUpButtons() {
-        this.hintBtn.disabled = this.achievements.coins < 50;
-        this.shuffleBtn.disabled = this.achievements.gems < 100;
+        this.shuffleBtn.disabled = this.shuffleUsed || this.achievements.coins < 100;
+        this.skipBtn.disabled = this.skipUsed || this.achievements.coins < 200;
     }
     
-    useHint() {
-        if (this.achievements.coins < 50) {
-            alert('Not enough coins! You need 50 coins to use a hint.');
-            return;
-        }
-        
-        if (!this.isGameActive) {
-            alert('Start a game first!');
-            return;
-        }
-        
-        this.achievements.coins -= 50;
-        this.saveAchievements();
-        this.updateCurrencyDisplay();
-        this.updatePowerUpButtons();
-        
-        // Find and highlight a valid move
-        const neighbors = this.getNeighbors(this.emptyIndex);
-        const randomNeighbor = neighbors[Math.floor(Math.random() * neighbors.length)];
-        
-        const tiles = this.puzzleElement.children;
-        tiles[randomNeighbor].style.boxShadow = '0 0 20px #f39c12';
-        setTimeout(() => {
-            tiles[randomNeighbor].style.boxShadow = '';
-        }, 2000);
+    updateDailyChallengeButton() {
+        const today = new Date().toDateString();
+        this.dailyChallengeBtn.disabled = this.dailyChallenge.completed && this.dailyChallenge.date === today;
     }
     
-    useShuffle() {
-        if (this.achievements.gems < 100) {
-            alert('Not enough gems! You need 100 gems to use shuffle.');
-            return;
+    loadDailyChallenge() {
+        const saved = localStorage.getItem('dailyChallenge');
+        if (saved) {
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted;
+                }
+            } catch (e) {
+                console.error('Failed to load daily challenge:', e);
+            }
         }
-        
-        if (!this.isGameActive) {
-            alert('Start a game first!');
-            return;
-        }
-        
-        if (confirm('Shuffle the puzzle for 100 gems?')) {
-            this.achievements.gems -= 100;
-            this.saveAchievements();
-            this.updateCurrencyDisplay();
-            this.updatePowerUpButtons();
-            
-            this.shufflePuzzle();
-            this.render();
+        return {
+            date: null,
+            completed: false,
+            size: 4,
+            seed: null
+        };
+    }
+    
+    saveDailyChallenge() {
+        const checksum = Security.generateChecksum(this.dailyChallenge);
+        const dataWithChecksum = { ...this.dailyChallenge, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('dailyChallenge', encrypted);
         }
     }
     
     startDailyChallenge() {
         const today = new Date().toDateString();
-        const lastPlayed = this.achievements.lastDailyChallenge || '';
         
-        if (lastPlayed === today) {
-            alert('You already completed today\'s Daily Challenge! Come back tomorrow.');
+        if (this.dailyChallenge.completed && this.dailyChallenge.date === today) {
+            alert('You have already completed today\'s daily challenge! Come back tomorrow.');
             return;
         }
         
-        if (confirm('Start today\'s Daily Challenge? Special rewards await!')) {
-            this.gameMode = 'dailyChallenge';
-            this.size = 5; // Daily challenge is always 5x5
-            this.difficultySelect.value = '5';
-            this.startNewGame();
+        // Generate a new daily challenge based on today's date
+        const dateSeed = new Date().toDateString();
+        const size = 4; // Fixed size for daily challenge
+        
+        this.dailyChallenge = {
+            date: today,
+            completed: false,
+            size: size,
+            seed: dateSeed
+        };
+        
+        this.saveDailyChallenge();
+        
+        // Start the daily challenge game
+        this.difficultySelect.value = size;
+        this.startNewGame();
+        
+        alert('Daily Challenge started! Complete it today for special rewards!');
+    }
+    
+    completeDailyChallenge() {
+        const today = new Date().toDateString();
+        
+        if (this.dailyChallenge.date === today && !this.dailyChallenge.completed) {
+            this.dailyChallenge.completed = true;
+            this.saveDailyChallenge();
+            
+            // Give special rewards
+            const bonusCoins = 500;
+            const bonusGems = 50;
+            const bonusExp = 200;
+            
+            this.achievements.coins += bonusCoins;
+            this.achievements.gems += bonusGems;
+            this.addExp(bonusExp);
+            this.saveAchievements();
+            this.updateCurrencyDisplay();
+            
+            alert(`🎉 Daily Challenge Complete! +${bonusCoins} coins, +${bonusGems} gems, +${bonusExp} EXP!`);
+            this.updateDailyChallengeButton();
         }
+    }
+    
+    initAudio() {
+        try {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.log('Audio context not supported');
+        }
+    }
+    
+    playSound(type) {
+        if (!this.audioContext) return;
+        
+        const oscillator = this.audioContext.createOscillator();
+        const gainNode = this.audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(this.audioContext.destination);
+        
+        if (type === 'move') {
+            oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(880, this.audioContext.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.1);
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.1);
+        } else if (type === 'win') {
+            oscillator.frequency.setValueAtTime(523.25, this.audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(659.25, this.audioContext.currentTime + 0.1);
+            oscillator.frequency.setValueAtTime(783.99, this.audioContext.currentTime + 0.2);
+            gainNode.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.5);
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.5);
+        } else if (type === 'click') {
+            oscillator.frequency.setValueAtTime(800, this.audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.05, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.05);
+        }
+    }
+    
+    useShuffle() {
+        if (this.shuffleUsed) {
+            alert('You can only use shuffle once per game!');
+            return;
+        }
+        
+        if (this.achievements.coins < 100) {
+            alert('Not enough coins! You need 100 coins to use shuffle.');
+            return;
+        }
+        
+        if (confirm('Use shuffle to randomize the puzzle for 100 coins?')) {
+            this.achievements.coins -= 100;
+            this.shuffleUsed = true;
+            this.saveAchievements();
+            this.updateCurrencyDisplay();
+            this.updatePowerUpButtons();
+            this.shufflePuzzle();
+            this.render();
+            alert('Puzzle shuffled!');
+        }
+    }
+    
+    useSkipTile() {
+        if (this.skipUsed) {
+            alert('You can only use skip tile once per game!');
+            return;
+        }
+        
+        if (this.achievements.coins < 200) {
+            alert('Not enough coins! You need 200 coins to use skip tile.');
+            return;
+        }
+        
+        if (confirm('Use skip tile to move a random tile to the correct position for 200 coins?')) {
+            this.achievements.coins -= 200;
+            this.skipUsed = true;
+            this.saveAchievements();
+            this.updateCurrencyDisplay();
+            this.updatePowerUpButtons();
+            
+            // Find a tile that's not in the correct position and move it
+            for (let i = 0; i < this.tiles.length; i++) {
+                if (this.tiles[i] !== 0 && this.tiles[i] !== i + 1) {
+                    const targetIndex = this.tiles[i] - 1;
+                    const emptyIndex = this.emptyIndex;
+                    
+                    // Swap the tile with empty space
+                    this.tiles[emptyIndex] = this.tiles[i];
+                    this.tiles[i] = 0;
+                    this.emptyIndex = i;
+                    
+                    this.moves++;
+                    this.render();
+                    alert('Tile skipped!');
+                    break;
+                }
+            }
+        }
+    }
+    
+    useHint() {
+        if (this.hintUsed) {
+            alert('You can only use one hint per game!');
+            return;
+        }
+        
+        if (this.achievements.coins < 50) {
+            alert('Not enough coins! You need 50 coins to use a hint.');
+            return;
+        }
+        
+        const bestMove = this.findBestMove();
+        if (bestMove !== null) {
+            this.achievements.coins -= 50;
+            this.hintUsed = true;
+            this.saveAchievements();
+            this.updateCurrencyDisplay();
+            this.updateHintButton();
+            
+            // Highlight the suggested tile
+            const tiles = this.puzzleElement.querySelectorAll('.tile');
+            tiles[bestMove].style.boxShadow = '0 0 20px 5px rgba(255, 215, 0, 0.8)';
+            tiles[bestMove].style.transform = 'scale(1.1)';
+            
+            setTimeout(() => {
+                tiles[bestMove].style.boxShadow = '';
+                tiles[bestMove].style.transform = '';
+            }, 2000);
+        }
+    }
+    
+    findBestMove() {
+        const neighbors = this.getNeighbors(this.emptyIndex);
+        let bestMove = null;
+        let bestScore = -Infinity;
+        
+        neighbors.forEach(neighbor => {
+            const score = this.evaluateMove(neighbor);
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = neighbor;
+            }
+        });
+        
+        return bestMove;
+    }
+    
+    evaluateMove(tileIndex) {
+        // Simple heuristic: prefer moves that bring tiles closer to their correct position
+        const tileValue = this.tiles[tileIndex];
+        const targetRow = Math.floor((tileValue - 1) / this.size);
+        const targetCol = (tileValue - 1) % this.size;
+        const currentRow = Math.floor(tileIndex / this.size);
+        const currentCol = tileIndex % this.size;
+        
+        const emptyRow = Math.floor(this.emptyIndex / this.size);
+        const emptyCol = this.emptyIndex % this.size;
+        
+        // Calculate distance improvement
+        const currentDistance = Math.abs(targetRow - currentRow) + Math.abs(targetCol - currentCol);
+        const newDistance = Math.abs(targetRow - emptyRow) + Math.abs(targetCol - emptyCol);
+        
+        return currentDistance - newDistance;
     }
     
     calculateMaxExp(level) {
@@ -702,6 +1079,590 @@ class SlidingPuzzle {
     
     hideThemeStore() {
         this.themeStoreModal.classList.add('hidden');
+    }
+    
+    showStats() {
+        this.renderStatsDashboard();
+        this.statsModal.classList.remove('hidden');
+    }
+    
+    hideStats() {
+        this.statsModal.classList.add('hidden');
+    }
+    
+    showGallery() {
+        this.renderPuzzleGallery();
+        this.galleryModal.classList.remove('hidden');
+    }
+    
+    hideGallery() {
+        this.galleryModal.classList.add('hidden');
+    }
+    
+    savePuzzle() {
+        const puzzleName = prompt('Enter a name for this puzzle:');
+        if (!puzzleName) return;
+        
+        const puzzle = {
+            id: Date.now(),
+            name: puzzleName,
+            size: this.size,
+            tiles: [...this.tiles],
+            emptyIndex: this.emptyIndex,
+            moves: this.moves,
+            seconds: this.seconds,
+            date: new Date().toISOString()
+        };
+        
+        this.savedPuzzles.push(puzzle);
+        this.saveSavedPuzzles();
+        alert('Puzzle saved successfully!');
+    }
+    
+    loadSavedPuzzles() {
+        const saved = localStorage.getItem('savedPuzzles');
+        if (saved) {
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted.puzzles || [];
+                }
+            } catch (e) {
+                console.error('Failed to load saved puzzles:', e);
+            }
+        }
+        return [];
+    }
+    
+    saveSavedPuzzles() {
+        const data = { puzzles: this.savedPuzzles };
+        const checksum = Security.generateChecksum(data);
+        const dataWithChecksum = { ...data, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('savedPuzzles', encrypted);
+        }
+    }
+    
+    renderPuzzleGallery() {
+        if (this.savedPuzzles.length === 0) {
+            this.puzzleGallery.innerHTML = '<p>No saved puzzles yet. Save a puzzle to see it here!</p>';
+            return;
+        }
+        
+        this.puzzleGallery.innerHTML = '';
+        
+        this.savedPuzzles.forEach(puzzle => {
+            const puzzleItem = document.createElement('div');
+            puzzleItem.className = 'gallery-item';
+            puzzleItem.innerHTML = `
+                <h3>${puzzle.name}</h3>
+                <p>Size: ${puzzle.size}x${puzzle.size}</p>
+                <p>Moves: ${puzzle.moves}</p>
+                <p>Time: ${Math.floor(puzzle.seconds / 60)}:${(puzzle.seconds % 60).toString().padStart(2, '0')}</p>
+                <p>Date: ${new Date(puzzle.date).toLocaleDateString()}</p>
+                <button class="btn btn-primary" onclick="game.loadPuzzle(${puzzle.id})">Load</button>
+                <button class="btn btn-secondary" onclick="game.deletePuzzle(${puzzle.id})">Delete</button>
+            `;
+            this.puzzleGallery.appendChild(puzzleItem);
+        });
+    }
+    
+    loadPuzzle(id) {
+        const puzzle = this.savedPuzzles.find(p => p.id === id);
+        if (!puzzle) return;
+        
+        this.stopTimer();
+        this.size = puzzle.size;
+        this.tiles = [...puzzle.tiles];
+        this.emptyIndex = puzzle.emptyIndex;
+        this.moves = puzzle.moves;
+        this.seconds = puzzle.seconds;
+        this.isGameActive = true;
+        this.moveHistory = [];
+        this.hintUsed = false;
+        this.shuffleUsed = false;
+        this.skipUsed = false;
+        
+        this.difficultySelect.value = this.size;
+        this.render();
+        this.updateStats();
+        this.updateUndoButton();
+        this.updateHintButton();
+        this.updatePowerUpButtons();
+        this.hideGallery();
+        this.startTimer();
+    }
+    
+    deletePuzzle(id) {
+        if (confirm('Are you sure you want to delete this puzzle?')) {
+            this.savedPuzzles = this.savedPuzzles.filter(p => p.id !== id);
+            this.saveSavedPuzzles();
+            this.renderPuzzleGallery();
+        }
+    }
+    
+    renderStatsDashboard() {
+        const totalGames = this.achievements.gamesPlayed || 0;
+        const totalWins = this.achievements.gamesWon || 0;
+        const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : 0;
+        const totalMoves = this.calculateTotalMoves();
+        const totalTime = this.calculateTotalTime();
+        const avgMoves = totalWins > 0 ? (totalMoves / totalWins).toFixed(1) : 0;
+        const avgTime = totalWins > 0 ? (totalTime / totalWins).toFixed(1) : 0;
+        
+        this.statsDashboard.innerHTML = `
+            <div class="stat-grid">
+                <div class="stat-card">
+                    <h3>🎮 Total Games</h3>
+                    <div class="stat-value">${totalGames}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🏆 Total Wins</h3>
+                    <div class="stat-value">${totalWins}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>📊 Win Rate</h3>
+                    <div class="stat-value">${winRate}%</div>
+                </div>
+                <div class="stat-card">
+                    <h3>🔥 Current Streak</h3>
+                    <div class="stat-value">${this.achievements.winStreak || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>👆 Avg Moves</h3>
+                    <div class="stat-value">${avgMoves}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>⏱️ Avg Time (s)</h3>
+                    <div class="stat-value">${avgTime}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>💰 Total Coins</h3>
+                    <div class="stat-value">${this.achievements.coins || 0}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>💎 Total Gems</h3>
+                    <div class="stat-value">${this.achievements.gems || 0}</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <h3>📈 Level Progress</h3>
+                <div class="stat-value">Level ${this.level} (${this.currentExp}/${this.maxExp} EXP)</div>
+            </div>
+            <div class="stat-card">
+                <h3>🏅 Local Leaderboard</h3>
+                <div class="stat-value">${this.renderLocalLeaderboard()}</div>
+            </div>
+        `;
+    }
+    
+    renderLocalLeaderboard() {
+        const leaderboard = this.loadLocalLeaderboard();
+        if (leaderboard.length === 0) {
+            return 'No records yet';
+        }
+        
+        return leaderboard.slice(0, 5).map((entry, index) => {
+            return `<div>#${index + 1}: ${entry.moves} moves, ${entry.time}s (${entry.date})</div>`;
+        }).join('');
+    }
+    
+    loadLocalLeaderboard() {
+        const saved = localStorage.getItem('localLeaderboard');
+        if (saved) {
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted.entries || [];
+                }
+            } catch (e) {
+                console.error('Failed to load leaderboard:', e);
+            }
+        }
+        return [];
+    }
+    
+    saveLocalLeaderboard() {
+        const leaderboard = this.loadLocalLeaderboard();
+        leaderboard.push({
+            moves: this.moves,
+            time: this.seconds,
+            size: this.size,
+            date: new Date().toLocaleDateString()
+        });
+        
+        // Sort by moves, then by time
+        leaderboard.sort((a, b) => a.moves - b.moves || a.time - b.time);
+        
+        // Keep only top 10
+        const top10 = leaderboard.slice(0, 10);
+        
+        const data = { entries: top10 };
+        const checksum = Security.generateChecksum(data);
+        const dataWithChecksum = { ...data, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('localLeaderboard', encrypted);
+        }
+    }
+    
+    shareResult() {
+        const minutes = Math.floor(this.seconds / 60);
+        const seconds = this.seconds % 60;
+        const timeStr = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const shareText = `🧩 I just solved a ${this.size}x${this.size} sliding puzzle in ${this.moves} moves and ${timeStr}! Can you beat my score? #SlidingPuzzle #PuzzleGame`;
+        
+        if (navigator.share) {
+            navigator.share({
+                title: 'Sliding Puzzle Win',
+                text: shareText,
+                url: window.location.href
+            }).catch(err => console.log('Share failed:', err));
+        } else {
+            // Fallback: copy to clipboard
+            navigator.clipboard.writeText(shareText).then(() => {
+                alert('Result copied to clipboard! Share it on your favorite social media.');
+            }).catch(err => {
+                console.log('Copy failed:', err);
+                alert('Share not supported on this browser. Result: ' + shareText);
+            });
+        }
+    }
+    
+    loadSpecialEvent() {
+        const saved = localStorage.getItem('specialEvent');
+        if (saved) {
+            try {
+                const decrypted = Security.decrypt(saved);
+                if (decrypted && Security.validateChecksum(decrypted, decrypted.checksum)) {
+                    return decrypted;
+                }
+            } catch (e) {
+                console.error('Failed to load special event:', e);
+            }
+        }
+        
+        // Check if there's an active special event
+        const today = new Date();
+        const eventDate = new Date(today.getFullYear(), 11, 25); // December 25 (Christmas)
+        const eventDate2 = new Date(today.getFullYear(), 0, 1); // January 1 (New Year)
+        const eventDate3 = new Date(today.getFullYear(), 9, 31); // October 31 (Halloween)
+        
+        const isEventActive = Math.abs(today - eventDate) < 86400000 * 3 || 
+                              Math.abs(today - eventDate2) < 86400000 * 3 ||
+                              Math.abs(today - eventDate3) < 86400000 * 3;
+        
+        if (isEventActive) {
+            return {
+                active: true,
+                name: 'Special Event!',
+                description: 'Double rewards for all games!',
+                bonusMultiplier: 2,
+                endDate: new Date(today.getTime() + 86400000 * 3).toISOString()
+            };
+        }
+        
+        return { active: false };
+    }
+    
+    saveSpecialEvent() {
+        const checksum = Security.generateChecksum(this.specialEvent);
+        const dataWithChecksum = { ...this.specialEvent, checksum };
+        const encrypted = Security.encrypt(dataWithChecksum);
+        if (encrypted) {
+            localStorage.setItem('specialEvent', encrypted);
+        }
+    }
+    
+    checkSpecialEvent() {
+        if (this.specialEvent.active) {
+            const endDate = new Date(this.specialEvent.endDate);
+            const now = new Date();
+            if (now > endDate) {
+                this.specialEvent = { active: false };
+                this.saveSpecialEvent();
+            } else {
+                // Show special event banner
+                const banner = document.createElement('div');
+                banner.className = 'special-event-banner';
+                banner.innerHTML = `
+                    <div class="special-event-content">
+                        <h3>🎉 ${this.specialEvent.name}</h3>
+                        <p>${this.specialEvent.description}</p>
+                        <button onclick="this.parentElement.parentElement.remove()">✕</button>
+                    </div>
+                `;
+                document.body.insertBefore(banner, document.body.firstChild);
+            }
+        }
+    }
+    
+    showTutorial() {
+        this.tutorialStep = 0;
+        this.renderTutorialStep();
+        this.tutorialModal.classList.remove('hidden');
+    }
+    
+    hideTutorial() {
+        this.tutorialModal.classList.add('hidden');
+    }
+    
+    renderTutorialStep() {
+        const steps = [
+            {
+                title: '🎯 Objective',
+                content: `
+                    <h3>🎯 Objective</h3>
+                    <p>The goal of the sliding puzzle is to arrange the numbered tiles in order from 1 to N, with the empty space at the bottom-right corner.</p>
+                    <p>For example, in a 3x3 puzzle, the tiles should be arranged as:</p>
+                    <ul>
+                        <li>1 2 3</li>
+                        <li>4 5 6</li>
+                        <li>7 8 [empty]</li>
+                    </ul>
+                `
+            },
+            {
+                title: '🎮 How to Play',
+                content: `
+                    <h3>🎮 How to Play</h3>
+                    <p>Click on any tile adjacent to the empty space to move it into the empty space.</p>
+                    <p>The empty space can move up, down, left, or right depending on which tile you click.</p>
+                    <p>Keep moving tiles until they are in the correct order!</p>
+                `
+            },
+            {
+                title: '💡 Tips for Solving',
+                content: `
+                    <h3>💡 Tips for Solving</h3>
+                    <ul>
+                        <li>Start by solving the first row (1, 2, 3...)</li>
+                        <li>Then solve the first column (1, 4, 7...)</li>
+                        <li>Work on the remaining 2x2 or 3x3 section</li>
+                        <li>Use the hint button if you're stuck (costs 50 coins)</li>
+                        <li>Use undo to correct mistakes (costs 10 coins)</li>
+                    </ul>
+                `
+            },
+            {
+                title: '⚡ Power-ups',
+                content: `
+                    <h3>⚡ Power-ups</h3>
+                    <ul>
+                        <li><strong>Hint (50 coins):</strong> Shows the best next move</li>
+                        <li><strong>Shuffle (100 coins):</strong> Randomizes the puzzle</li>
+                        <li><strong>Skip Tile (200 coins):</strong> Moves a tile to its correct position</li>
+                    </ul>
+                `
+            },
+            {
+                title: '🏆 Earning Rewards',
+                content: `
+                    <h3>🏆 Earning Rewards</h3>
+                    <p>Complete puzzles to earn coins, gems, and EXP!</p>
+                    <ul>
+                        <li>Faster completion = more coins</li>
+                        <li>Fewer moves = more coins</li>
+                        <li>Win streaks = bonus coins</li>
+                        <li>Level up by earning EXP</li>
+                        <li>Use gems to purchase themes</li>
+                    </ul>
+                `
+            }
+        ];
+        
+        const step = steps[this.tutorialStep];
+        this.tutorialContent.innerHTML = step.content;
+        this.stepIndicator.textContent = `Step ${this.tutorialStep + 1} of ${steps.length}`;
+        
+        this.prevStepBtn.disabled = this.tutorialStep === 0;
+        this.nextStepBtn.textContent = this.tutorialStep === steps.length - 1 ? 'Finish' : 'Next';
+    }
+    
+    prevTutorialStep() {
+        if (this.tutorialStep > 0) {
+            this.tutorialStep--;
+            this.renderTutorialStep();
+        }
+    }
+    
+    nextTutorialStep() {
+        const steps = 5;
+        if (this.tutorialStep < steps - 1) {
+            this.tutorialStep++;
+            this.renderTutorialStep();
+        } else {
+            this.hideTutorial();
+        }
+    }
+    
+    showConnectionModal() {
+        this.connectionModal.classList.remove('hidden');
+        this.createRoomSection.classList.add('hidden');
+        this.joinRoomSection.classList.add('hidden');
+    }
+    
+    hideConnectionModal() {
+        this.connectionModal.classList.add('hidden');
+        if (this.multiplayerInterval) {
+            clearInterval(this.multiplayerInterval);
+            this.multiplayerInterval = null;
+        }
+    }
+    
+    createRoom() {
+        const roomCode = this.generateRoomCode();
+        this.multiplayerRoom = roomCode;
+        this.isHost = true;
+        this.roomCodeInput.value = roomCode;
+        
+        // Store room in localStorage
+        const roomData = {
+            hostMoves: 0,
+            hostTime: 0,
+            guestMoves: 0,
+            guestTime: 0,
+            hostConnected: true,
+            guestConnected: false,
+            puzzleSize: parseInt(this.difficultySelect.value),
+            puzzleTiles: [...this.tiles],
+            emptyIndex: this.emptyIndex
+        };
+        localStorage.setItem(`mp_room_${roomCode}`, JSON.stringify(roomData));
+        
+        this.createRoomSection.classList.remove('hidden');
+        this.joinRoomSection.classList.add('hidden');
+        
+        // Start polling for opponent
+        this.multiplayerInterval = setInterval(() => this.checkOpponentJoined(), 1000);
+    }
+    
+    showJoinRoom() {
+        this.createRoomSection.classList.add('hidden');
+        this.joinRoomSection.classList.remove('hidden');
+    }
+    
+    joinRoom() {
+        const roomCode = this.joinRoomCodeInput.value.trim().toUpperCase();
+        if (!roomCode) {
+            alert('Please enter a room code');
+            return;
+        }
+        
+        const roomData = localStorage.getItem(`mp_room_${roomCode}`);
+        if (!roomData) {
+            alert('Room not found');
+            return;
+        }
+        
+        const parsedRoom = JSON.parse(roomData);
+        if (parsedRoom.guestConnected) {
+            alert('Room is full');
+            return;
+        }
+        
+        this.multiplayerRoom = roomCode;
+        this.isHost = false;
+        
+        // Join the room
+        parsedRoom.guestConnected = true;
+        localStorage.setItem(`mp_room_${roomCode}`, JSON.stringify(parsedRoom));
+        
+        // Load the same puzzle
+        this.size = parsedRoom.puzzleSize;
+        this.tiles = [...parsedRoom.puzzleTiles];
+        this.emptyIndex = parsedRoom.emptyIndex;
+        this.difficultySelect.value = this.size;
+        
+        this.hideConnectionModal();
+        this.opponentStats.classList.remove('hidden');
+        this.opponentStatus.textContent = 'Connected';
+        
+        // Start game
+        this.startNewGame();
+        
+        // Start polling for opponent progress
+        this.multiplayerInterval = setInterval(() => this.syncOpponentProgress(), 500);
+    }
+    
+    checkOpponentJoined() {
+        const roomData = localStorage.getItem(`mp_room_${this.multiplayerRoom}`);
+        if (!roomData) return;
+        
+        const parsedRoom = JSON.parse(roomData);
+        if (parsedRoom.guestConnected) {
+            // Opponent joined!
+            clearInterval(this.multiplayerInterval);
+            this.hideConnectionModal();
+            this.opponentStats.classList.remove('hidden');
+            this.opponentStatus.textContent = 'Connected';
+            
+            // Start game
+            this.startNewGame();
+            
+            // Start polling for opponent progress
+            this.multiplayerInterval = setInterval(() => this.syncOpponentProgress(), 500);
+        }
+    }
+    
+    syncOpponentProgress() {
+        const roomData = localStorage.getItem(`mp_room_${this.multiplayerRoom}`);
+        if (!roomData) return;
+        
+        const parsedRoom = JSON.parse(roomData);
+        
+        if (this.isHost) {
+            // Update opponent (guest) progress
+            this.opponentMoves.textContent = parsedRoom.guestMoves;
+            const minutes = Math.floor(parsedRoom.guestTime / 60);
+            const seconds = parsedRoom.guestTime % 60;
+            this.opponentTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update my progress
+            parsedRoom.hostMoves = this.moves;
+            parsedRoom.hostTime = this.seconds;
+            localStorage.setItem(`mp_room_${this.multiplayerRoom}`, JSON.stringify(parsedRoom));
+        } else {
+            // Update opponent (host) progress
+            this.opponentMoves.textContent = parsedRoom.hostMoves;
+            const minutes = Math.floor(parsedRoom.hostTime / 60);
+            const seconds = parsedRoom.hostTime % 60;
+            this.opponentTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            // Update my progress
+            parsedRoom.guestMoves = this.moves;
+            parsedRoom.guestTime = this.seconds;
+            localStorage.setItem(`mp_room_${this.multiplayerRoom}`, JSON.stringify(parsedRoom));
+        }
+    }
+    
+    copyRoomCode() {
+        navigator.clipboard.writeText(this.roomCodeInput.value).then(() => {
+            alert('Room code copied!');
+        }).catch(() => {
+            alert('Failed to copy room code');
+        });
+    }
+    
+    generateRoomCode() {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return code;
+    }
+    
+    calculateTotalMoves() {
+        // This is a simplified calculation - in a real implementation you'd track total moves
+        return (this.achievements.gamesWon || 0) * 50; // Average estimate
+    }
+    
+    calculateTotalTime() {
+        // This is a simplified calculation - in a real implementation you'd track total time
+        return (this.achievements.gamesWon || 0) * 120; // Average estimate
     }
     
     renderThemeList() {
@@ -816,7 +1777,6 @@ class SlidingPuzzle {
                     if (!decrypted.gems) decrypted.gems = 0;
                     if (!decrypted.level) decrypted.level = 1;
                     if (!decrypted.currentExp) decrypted.currentExp = 0;
-                    if (!decrypted.lastDailyChallenge) decrypted.lastDailyChallenge = '';
                     // TEMPORARY: Set to max values for testing
                     decrypted.coins = 9999999999999;
                     decrypted.gems = 9999999999999;
@@ -835,8 +1795,7 @@ class SlidingPuzzle {
             coins: 9999999999999,
             gems: 9999999999999,
             level: 1,
-            currentExp: 0,
-            lastDailyChallenge: ''
+            currentExp: 0
         };
     }
     
@@ -867,14 +1826,7 @@ class SlidingPuzzle {
         this.achievements.gamesWon++;
         this.achievements.winStreak++;
         
-        // Streak bonuses
-        if (this.achievements.winStreak >= 5) {
-            const streakBonus = this.achievements.winStreak * 10;
-            this.achievements.coins += streakBonus;
-            this.achievements.gems += Math.floor(streakBonus / 10);
-        }
-        
-        const difficultyKey = this.size === 3 ? 'easy' : this.size === 4 ? 'medium' : this.size === 5 ? 'hard' : 'expert';
+        const difficultyKey = this.size === 3 ? 'easy' : this.size === 4 ? 'medium' : this.size === 5 ? 'hard' : `size${this.size}`;
         
         if (!this.achievements.bestTime[difficultyKey] || this.seconds < this.achievements.bestTime[difficultyKey]) {
             this.achievements.bestTime[difficultyKey] = this.seconds;
@@ -917,6 +1869,36 @@ class SlidingPuzzle {
         document.getElementById('bestMovesEasy').textContent = this.achievements.bestMoves.easy ?? '--';
         document.getElementById('bestMovesMedium').textContent = this.achievements.bestMoves.medium ?? '--';
         document.getElementById('bestMovesHard').textContent = this.achievements.bestMoves.hard ?? '--';
+        
+        // Add achievement badges
+        this.addAchievementBadges();
+    }
+    
+    addAchievementBadges() {
+        const achievements = [
+            { id: 'gamesPlayed', threshold: 10, badge: '🥉' },
+            { id: 'gamesPlayed', threshold: 50, badge: '🥈' },
+            { id: 'gamesPlayed', threshold: 100, badge: '🥇' },
+            { id: 'gamesWon', threshold: 10, badge: '🎖️' },
+            { id: 'gamesWon', threshold: 50, badge: '🏅' },
+            { id: 'winStreak', threshold: 5, badge: '🔥' },
+            { id: 'winStreak', threshold: 10, badge: '⚡' },
+            { id: 'winStreak', threshold: 20, badge: '💎' }
+        ];
+        
+        achievements.forEach(achievement => {
+            const value = this.achievements[achievement.id] || 0;
+            if (value >= achievement.threshold) {
+                const element = document.getElementById(achievement.id);
+                if (element && !element.parentElement.querySelector('.achievement-badge')) {
+                    const badge = document.createElement('span');
+                    badge.className = 'achievement-badge';
+                    badge.textContent = achievement.badge;
+                    element.parentElement.style.position = 'relative';
+                    element.parentElement.appendChild(badge);
+                }
+            }
+        });
     }
     
     resetStats() {
@@ -962,22 +1944,23 @@ class SlidingPuzzle {
     
     startTimer() {
         this.timerInterval = setInterval(() => {
-            if (this.gameMode === 'timeAttack') {
-                this.timeAttackTimer--;
-                this.seconds++;
-                this.updateStats();
-                
-                if (this.timeAttackTimer <= 0) {
-                    this.stopTimer();
-                    this.isGameActive = false;
-                    alert('Time Attack Mode: Time\'s up! Game Over.');
-                    this.startNewGame();
+            this.seconds++;
+            this.updateStats();
+            
+            // Check time limit for time attack mode
+            if (this.gameMode === 'timeAttack' && this.timeLimit) {
+                if (this.seconds >= this.timeLimit) {
+                    this.handleTimeUp();
                 }
-            } else {
-                this.seconds++;
-                this.updateStats();
             }
         }, 1000);
+    }
+    
+    handleTimeUp() {
+        this.stopTimer();
+        this.isGameActive = false;
+        alert('Time\'s up! You ran out of time in Time Attack mode.');
+        this.startNewGame();
     }
     
     stopTimer() {
@@ -988,23 +1971,27 @@ class SlidingPuzzle {
     }
     
     calculateRewards() {
-        const difficultyMultiplier = this.size;
+        const difficultyMultiplier = this.size === 3 ? 1 : this.size === 4 ? 2 : 3;
         const timeBonus = Math.max(0, Math.floor((300 - this.seconds) / 10));
         const movesBonus = Math.max(0, Math.floor((200 - this.moves) / 5));
         
         const baseCoins = 20 * difficultyMultiplier;
         const baseGems = 2 * difficultyMultiplier;
         
+        // Streak bonus
+        const streakBonus = Math.floor(this.achievements.winStreak * 10);
+        
         // Anti-tampering: Cap rewards to prevent exploitation
         const maxCoins = 1000;
         const maxGems = 100;
         
-        const totalCoins = Math.min(baseCoins + timeBonus + movesBonus, maxCoins);
+        const totalCoins = Math.min(baseCoins + timeBonus + movesBonus + streakBonus, maxCoins);
         const totalGems = Math.min(baseGems + Math.floor(timeBonus / 20) + Math.floor(movesBonus / 10), maxGems);
         
         return {
             coins: totalCoins,
-            gems: totalGems
+            gems: totalGems,
+            streakBonus
         };
     }
     

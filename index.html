@@ -13,7 +13,7 @@
             <div class="difficulty-selector">
                 <label for="difficulty">Difficulty:</label>
                 <select id="difficulty">
-                    <option value="2">Very Easy (2x2)</option>
+                    <option value="2">Beginner (2x2)</option>
                     <option value="3">Easy (3x3)</option>
                     <option value="4" selected>Medium (4x4)</option>
                     <option value="5">Hard (5x5)</option>
@@ -21,7 +21,7 @@
                     <option value="7">Master (7x7)</option>
                     <option value="8">Grandmaster (8x8)</option>
                     <option value="9">Legendary (9x9)</option>
-                    <option value="10">Ultimate (10x10)</option>
+                    <option value="10">Insane (10x10)</option>
                 </select>
             </div>
             <div class="mode-selector">
@@ -29,9 +29,13 @@
                 <select id="gameMode">
                     <option value="normal" selected>Normal</option>
                     <option value="timeAttack">Time Attack</option>
+                    <option value="localMultiplayer">Local Multiplayer</option>
+                    <option value="onlineMultiplayer">Online Multiplayer</option>
                 </select>
             </div>
             <button id="achievementsBtn" class="btn btn-secondary">🏆 Achievements</button>
+            <button id="statsBtn" class="btn btn-secondary">📊 Statistics</button>
+            <button id="tutorialBtn" class="btn btn-secondary">📖 Tutorial</button>
             <button id="newGame" class="btn btn-primary">New Game</button>
         </div>
         
@@ -71,10 +75,29 @@
             </div>
         </div>
 
+        <div id="opponentStats" class="opponent-stats hidden">
+            <h3>👤 Opponent Progress</h3>
+            <div class="opponent-info">
+                <span class="stat-label">Moves:</span>
+                <span id="opponentMoves" class="stat-value">0</span>
+            </div>
+            <div class="opponent-info">
+                <span class="stat-label">Time:</span>
+                <span id="opponentTime" class="stat-value">00:00</span>
+            </div>
+            <div class="opponent-info">
+                <span class="stat-label">Status:</span>
+                <span id="opponentStatus" class="stat-value">Not Connected</span>
+            </div>
+        </div>
+
         <div class="game-controls">
             <button id="undoBtn" class="btn btn-undo">↩️ Undo (10 💰)</button>
             <button id="hintBtn" class="btn btn-hint">💡 Hint (50 💰)</button>
-            <button id="shuffleBtn" class="btn btn-shuffle">🔀 Shuffle (100 💎)</button>
+            <button id="shuffleBtn" class="btn btn-shuffle">🔀 Shuffle (100 💰)</button>
+            <button id="skipBtn" class="btn btn-skip">⏭️ Skip Tile (200 💰)</button>
+            <button id="savePuzzleBtn" class="btn btn-save">💾 Save Puzzle</button>
+            <button id="galleryBtn" class="btn btn-gallery">🖼️ Puzzle Gallery</button>
             <button id="dailyChallengeBtn" class="btn btn-daily">📅 Daily Challenge</button>
             <button id="missionsBtn" class="btn btn-mission">🎯 Missions</button>
             <button id="themeStoreBtn" class="btn btn-theme">🎨 Theme Store (999 💎)</button>
@@ -87,6 +110,7 @@
             <p>You solved the puzzle!</p>
             <p id="winStats"></p>
             <p id="rewardMessage" class="reward-message"></p>
+            <button id="shareBtn" class="btn btn-share">📤 Share</button>
             <button id="playAgain" class="btn btn-primary">Play Again</button>
         </div>
 
@@ -417,6 +441,72 @@
                     <button id="closeThemeStore" class="close-btn">&times;</button>
                 </div>
                 <div class="theme-list" id="themeList"></div>
+            </div>
+        </div>
+
+        <div id="statsModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📊 Statistics Dashboard</h2>
+                    <button id="closeStats" class="close-btn">&times;</button>
+                </div>
+                <div id="statsDashboard" class="stats-dashboard"></div>
+            </div>
+        </div>
+
+        <div id="galleryModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🖼️ Puzzle Gallery</h2>
+                    <button id="closeGallery" class="close-btn">&times;</button>
+                </div>
+                <div id="puzzleGallery" class="puzzle-gallery"></div>
+            </div>
+        </div>
+
+        <div id="tutorialModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>📖 Tutorial</h2>
+                    <button id="closeTutorial" class="close-btn">&times;</button>
+                </div>
+                <div id="tutorialContent" class="tutorial-content"></div>
+                <div class="tutorial-navigation">
+                    <button id="prevStep" class="btn btn-secondary">Previous</button>
+                    <span id="stepIndicator">Step 1 of 5</span>
+                    <button id="nextStep" class="btn btn-primary">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="connectionModal" class="achievements-modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>🔗 Online Multiplayer</h2>
+                    <button id="closeConnection" class="close-btn">&times;</button>
+                </div>
+                <div class="connection-content">
+                    <div class="connection-options">
+                        <button id="createRoomBtn" class="btn btn-primary">Create Room</button>
+                        <button id="joinRoomBtn" class="btn btn-secondary">Join Room</button>
+                    </div>
+                    <div id="createRoomSection" class="connection-section hidden">
+                        <h3>Create Room</h3>
+                        <p>Share this room code with your friend:</p>
+                        <div class="room-code-display">
+                            <input type="text" id="roomCode" readonly>
+                            <button id="copyRoomCode" class="btn btn-secondary">📋 Copy</button>
+                        </div>
+                        <p>Waiting for opponent to join...</p>
+                        <div id="waitingIndicator" class="waiting-indicator">⏳ Waiting...</div>
+                    </div>
+                    <div id="joinRoomSection" class="connection-section hidden">
+                        <h3>Join Room</h3>
+                        <p>Enter the room code:</p>
+                        <input type="text" id="joinRoomCode" placeholder="Enter room code">
+                        <button id="joinRoomSubmit" class="btn btn-primary">Join</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
